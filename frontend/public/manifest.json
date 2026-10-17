@@ -1,0 +1,62 @@
+{
+  "name": "Maraayn Management System",
+  "short_name": "Maraayn",
+  "description": "Your Business, In One Place — Multi-Business Management Platform",
+  "theme_color": "#142746",
+  "background_color": "#F5F7FB",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "start_url": "/",
+  "scope": "/",
+  "id": "com.maraayn.app",
+  "icons": [
+    {
+      "src": "/pwa-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/favicon.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "New Sale (POS)",
+      "short_name": "POS",
+      "description": "Open Point of Sale screen",
+      "url": "/business/sales/new",
+      "icons": [{ "src": "/pwa-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Debt Management",
+      "short_name": "Debts",
+      "description": "Manage customer credit accounts",
+      "url": "/business/debts",
+      "icons": [{ "src": "/pwa-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Customers",
+      "short_name": "Customers",
+      "description": "View customer ledger",
+      "url": "/business/customers",
+      "icons": [{ "src": "/pwa-192x192.png", "sizes": "192x192" }]
+    }
+  ]
+}
+
