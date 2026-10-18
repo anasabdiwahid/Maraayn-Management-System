@@ -17,8 +17,8 @@ describe('Maraayn Management System — End-to-End Workflows & Security', () => 
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        loginIdentifier: 'superadmin@maraayn.com',
-        password: 'SuperAdmin@2026',
+        loginIdentifier: 'anasabdiwahidhussein@gmail.com',
+        password: 'yDnSl700',
       }),
     });
 
@@ -34,7 +34,7 @@ describe('Maraayn Management System — End-to-End Workflows & Security', () => 
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        loginIdentifier: 'superadmin@maraayn.com',
+        loginIdentifier: 'anasabdiwahidhussein@gmail.com',
         password: 'WrongPassword@123',
       }),
     });
@@ -47,8 +47,8 @@ describe('Maraayn Management System — End-to-End Workflows & Security', () => 
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        loginIdentifier: 'albaraka@maraayn.com',
-        password: 'Baraka@2026',
+        loginIdentifier: 'shaafi@maraayn.com',
+        password: 'Shaafi@2026',
       }),
     });
 
@@ -56,7 +56,7 @@ describe('Maraayn Management System — End-to-End Workflows & Security', () => 
     const data = await res.json();
     expect(data.user.platformRole).toBe('BUSINESS_USER');
     expect(data.tenant).toBeDefined();
-    expect(data.tenant.name).toBe('Al-Baraka Supermarket');
+    expect(data.tenant.name).toBe('Shaafi Pharmacy');
     expect(data.tenant.storageQuotaBytes).toBe(4 * 1024 * 1024 * 1024);
 
     businessToken = data.accessToken;
@@ -241,7 +241,7 @@ describe('Maraayn Management System — End-to-End Workflows & Security', () => 
     const data = await res.json();
     expect(data.waLink).toBeDefined();
     expect(data.waLink).toContain('https://wa.me/');
-    expect(data.plainMessage).toContain('Al-Baraka Supermarket'.toUpperCase());
+    expect(data.plainMessage).toContain('Shaafi Pharmacy'.toUpperCase());
     expect(data.plainMessage).toContain(createdReceiptNumber);
   });
 

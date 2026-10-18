@@ -301,6 +301,7 @@ export const AdminDashboardPage: React.FC = () => {
             ) : (
               <div className="text-center py-8 text-xs text-slate-400">No activity logs recorded yet</div>
             )}
+          </div>
         </div>
       </div>
 
