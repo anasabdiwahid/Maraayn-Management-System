@@ -110,7 +110,7 @@ export const LoginPage: React.FC = () => {
       </div>
 
       {/* Outer Card with Rounded Corners & Deep Drop Shadow */}
-      <div className="w-full max-w-4xl bg-white/98 backdrop-blur-xl rounded-2xl sm:rounded-3xl md:rounded-[32px] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.55)] overflow-hidden flex flex-col md:flex-row relative border border-white/20 my-auto z-10">
+      <div className="w-full max-w-4xl bg-white/98 backdrop-blur-xl rounded-2xl sm:rounded-3xl md:rounded-[32px] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.55)] overflow-hidden flex flex-col md:flex-row relative border border-white/20 md:my-auto z-10">
         
         {/* ================= LEFT SIDE: Brand Hero (Navy/Blue Gradient) ================= */}
         <div className="w-full md:w-[42%] bg-gradient-to-br from-[#142746] via-[#173868] to-[#1f4a88] text-white p-5 sm:p-7 md:p-10 flex flex-col justify-between items-center text-center relative overflow-hidden shrink-0">
@@ -368,7 +368,7 @@ export const LoginPage: React.FC = () => {
       </div>
 
       {/* Developer Credit - Mobile only at bottom of screen below card */}
-      <div className="md:hidden relative z-10 mt-3 mb-10 text-center text-xs text-slate-200 font-medium tracking-wider select-none">
+      <div className="md:hidden relative z-10 mt-3 mb-3 text-center text-xs text-slate-200 font-medium tracking-wider select-none">
         <div className="inline-flex items-center px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/10 shadow-sm">
           <span>Developer By&nbsp;</span>
           <a
