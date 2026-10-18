@@ -4,7 +4,13 @@ import { Eye, EyeOff, Lock, User, AlertCircle, ArrowRight, Check } from 'lucide-
 import { useAuth } from '../../context/AuthContext.js';
 
 export const LoginPage: React.FC = () => {
-  const [identifier, setIdentifier] = useState('');
+  const [rememberMe, setRememberMe] = useState(() => {
+    return localStorage.getItem('maraayn_remember_me') === 'true';
+  });
+  const [identifier, setIdentifier] = useState(() => {
+    const isRemembered = localStorage.getItem('maraayn_remember_me') === 'true';
+    return isRemembered ? (localStorage.getItem('maraayn_saved_identifier') || '') : '';
+  });
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -13,6 +19,19 @@ export const LoginPage: React.FC = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
 
+  const handleRememberToggle = (checked: boolean) => {
+    setRememberMe(checked);
+    if (!checked) {
+      localStorage.removeItem('maraayn_remember_me');
+      localStorage.removeItem('maraayn_saved_identifier');
+    } else if (identifier.trim()) {
+      localStorage.setItem('maraayn_remember_me', 'true');
+      localStorage.setItem('maraayn_saved_identifier', identifier.trim());
+    } else {
+      localStorage.setItem('maraayn_remember_me', 'true');
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!identifier || !password) {
@@ -20,11 +39,19 @@ export const LoginPage: React.FC = () => {
       return;
     }
 
+    if (rememberMe && identifier.trim()) {
+      localStorage.setItem('maraayn_remember_me', 'true');
+      localStorage.setItem('maraayn_saved_identifier', identifier.trim());
+    } else {
+      localStorage.removeItem('maraayn_remember_me');
+      localStorage.removeItem('maraayn_saved_identifier');
+    }
+
     setError(null);
     setLoading(true);
 
     try {
-      const { user } = await login(identifier, password);
+      const { user } = await login(identifier.trim(), password);
       if (user.platformRole === 'SUPER_ADMIN' || user.platformRole === 'ADMIN') {
         navigate('/admin');
       } else {
@@ -148,7 +175,7 @@ export const LoginPage: React.FC = () => {
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <form onSubmit={handleSubmit} autoComplete="off" className="space-y-5">
               {/* Email / Username Input */}
               <div className="space-y-1.5">
                 <label className="block text-xs font-bold text-slate-700 tracking-wide">
@@ -159,9 +186,22 @@ export const LoginPage: React.FC = () => {
                     <User className="w-4 h-4" />
                   </div>
                   <input
+                    id="loginIdentifier"
+                    name="loginIdentifier"
                     type="text"
+                    autoComplete="off"
                     value={identifier}
-                    onChange={(e) => setIdentifier(e.target.value)}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setIdentifier(val);
+                      if (rememberMe) {
+                        if (val.trim()) {
+                          localStorage.setItem('maraayn_saved_identifier', val.trim());
+                        } else {
+                          localStorage.removeItem('maraayn_saved_identifier');
+                        }
+                      }
+                    }}
                     placeholder="Enter your email or username"
                     required
                     className="w-full bg-transparent text-xs sm:text-sm text-slate-800 focus:outline-none placeholder-slate-400 font-medium"
@@ -194,7 +234,10 @@ export const LoginPage: React.FC = () => {
                     <Lock className="w-4 h-4" />
                   </div>
                   <input
+                    id="loginPassword"
+                    name="loginPassword"
                     type={showPassword ? 'text' : 'password'}
+                    autoComplete="new-password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Enter your password"
@@ -217,8 +260,9 @@ export const LoginPage: React.FC = () => {
                 <label className="flex items-center text-slate-600 cursor-pointer select-none">
                   <input
                     type="checkbox"
-                    defaultChecked
-                    className="rounded border-slate-300 text-[#142746] focus:ring-[#142746] mr-2 w-4 h-4"
+                    checked={rememberMe}
+                    onChange={(e) => handleRememberToggle(e.target.checked)}
+                    className="rounded border-slate-300 text-[#142746] focus:ring-[#142746] mr-2 w-4 h-4 cursor-pointer"
                   />
                   <span>Remember me on this device</span>
                 </label>
