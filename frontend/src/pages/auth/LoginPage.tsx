@@ -368,7 +368,7 @@ export const LoginPage: React.FC = () => {
       </div>
 
       {/* Developer Credit - Mobile only at bottom of screen below card */}
-      <div className="md:hidden relative z-10 pt-3 pb-1 text-center text-xs text-slate-300/90 font-medium tracking-wider">
+      <div className="md:hidden relative z-10 pt-2 pb-7 text-center text-xs text-slate-200 font-medium tracking-wider select-none">
         <span>Developer By </span>
         <a
           href="https://anazabdiwahid.netlify.app/"
