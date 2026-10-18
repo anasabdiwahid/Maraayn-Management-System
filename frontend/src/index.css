@@ -69,3 +69,93 @@ input:-webkit-autofill:active {
   -webkit-text-fill-color: #0f172a !important;
   border-radius: 12px;
 }
+
+/* Background Glowing Orbs Animations */
+@keyframes blob-float-1 {
+  0%, 100% {
+    transform: translate(0px, 0px) scale(1);
+  }
+  33% {
+    transform: translate(40px, -60px) scale(1.12);
+  }
+  66% {
+    transform: translate(-30px, 30px) scale(0.92);
+  }
+}
+
+@keyframes blob-float-2 {
+  0%, 100% {
+    transform: translate(0px, 0px) scale(1);
+  }
+  33% {
+    transform: translate(-50px, 50px) scale(1.15);
+  }
+  66% {
+    transform: translate(35px, -40px) scale(0.9);
+  }
+}
+
+@keyframes blob-float-3 {
+  0%, 100% {
+    transform: translate(0px, 0px) scale(1);
+  }
+  50% {
+    transform: translate(45px, 45px) scale(1.1);
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    opacity: 0.55;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(1.06);
+  }
+}
+
+@keyframes float-particle {
+  0% {
+    transform: translateY(0px) rotate(0deg);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.6;
+  }
+  80% {
+    opacity: 0.6;
+  }
+  100% {
+    transform: translateY(-100px) rotate(180deg);
+    opacity: 0;
+  }
+}
+
+.animate-blob-1 {
+  animation: blob-float-1 14s ease-in-out infinite;
+}
+
+.animate-blob-2 {
+  animation: blob-float-2 18s ease-in-out infinite;
+}
+
+.animate-blob-3 {
+  animation: blob-float-3 22s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 9s ease-in-out infinite;
+}
+
+.animate-particle-1 {
+  animation: float-particle 8s ease-in-out infinite;
+}
+
+.animate-particle-2 {
+  animation: float-particle 11s ease-in-out infinite 2s;
+}
+
+.animate-particle-3 {
+  animation: float-particle 9s ease-in-out infinite 4s;
+}

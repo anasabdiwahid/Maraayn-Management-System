@@ -77,9 +77,40 @@ export const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-[100dvh] w-full bg-[#DDE3EA] flex items-center justify-center p-2.5 sm:p-6 lg:p-8 login-playfair font-playfair overflow-x-hidden">
+    <div className="relative min-h-[100dvh] w-full bg-gradient-to-br from-[#0a1626] via-[#10223d] to-[#162f55] flex items-center justify-center p-2.5 sm:p-6 lg:p-8 login-playfair font-playfair overflow-hidden">
+      
+      {/* ================= ANIMATED BACKGROUND ELEMENTS ================= */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
+        {/* Subtle Ambient Grid Pattern */}
+        <div 
+          className="absolute inset-0 opacity-[0.08]" 
+          style={{
+            backgroundImage: `radial-gradient(rgba(255, 255, 255, 0.45) 1px, transparent 1px)`,
+            backgroundSize: '28px 28px'
+          }}
+        />
+
+        {/* Ambient Glowing Orb 1 - Golden Amber (Top Left) */}
+        <div className="absolute -top-20 -left-20 w-80 sm:w-[440px] h-80 sm:h-[440px] rounded-full bg-gradient-to-br from-[#E6AE43]/30 via-[#f59e0b]/20 to-transparent blur-[80px] sm:blur-[110px] animate-blob-1" />
+
+        {/* Ambient Glowing Orb 2 - Deep Royal/Electric Blue (Bottom Right) */}
+        <div className="absolute -bottom-24 -right-20 w-80 sm:w-[500px] h-80 sm:h-[500px] rounded-full bg-gradient-to-tl from-[#1d4ed8]/35 via-[#3b82f6]/25 to-transparent blur-[90px] sm:blur-[120px] animate-blob-2" />
+
+        {/* Ambient Glowing Orb 3 - Soft Cyan/Teal (Center Left) */}
+        <div className="absolute top-1/3 left-1/4 -translate-x-1/2 w-64 sm:w-[360px] h-64 sm:h-[360px] rounded-full bg-[#06b6d4]/15 blur-[70px] sm:blur-[100px] animate-blob-3" />
+
+        {/* Ambient Glowing Orb 4 - Pulsing Gold Accent (Bottom Center) */}
+        <div className="absolute bottom-10 left-1/3 w-60 sm:w-80 h-60 sm:h-80 rounded-full bg-[#E6AE43]/15 blur-[80px] animate-pulse-glow" />
+
+        {/* Gentle Floating Light Particles */}
+        <div className="absolute top-1/4 left-1/5 w-2 h-2 rounded-full bg-[#E6AE43]/50 blur-[1px] animate-particle-1" />
+        <div className="absolute top-2/3 right-1/4 w-2.5 h-2.5 rounded-full bg-cyan-300/50 blur-[1px] animate-particle-2" />
+        <div className="absolute bottom-1/4 left-1/2 w-1.5 h-1.5 rounded-full bg-white/60 blur-[1px] animate-particle-3" />
+        <div className="absolute top-1/3 right-1/6 w-2 h-2 rounded-full bg-blue-300/40 blur-[1px] animate-particle-1" />
+      </div>
+
       {/* Outer Card with Rounded Corners & Deep Drop Shadow */}
-      <div className="w-full max-w-4xl bg-white rounded-2xl sm:rounded-3xl md:rounded-[32px] shadow-xl sm:shadow-2xl shadow-slate-400/30 overflow-hidden flex flex-col md:flex-row relative border border-slate-200/60 my-auto">
+      <div className="w-full max-w-4xl bg-white/98 backdrop-blur-xl rounded-2xl sm:rounded-3xl md:rounded-[32px] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.55)] overflow-hidden flex flex-col md:flex-row relative border border-white/20 my-auto z-10">
         
         {/* ================= LEFT SIDE: Brand Hero (Navy/Blue Gradient) ================= */}
         <div className="w-full md:w-[42%] bg-gradient-to-br from-[#142746] via-[#173868] to-[#1f4a88] text-white p-5 sm:p-7 md:p-10 flex flex-col justify-between items-center text-center relative overflow-hidden shrink-0">
