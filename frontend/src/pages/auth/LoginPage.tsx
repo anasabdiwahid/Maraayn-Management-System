@@ -77,49 +77,49 @@ export const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#DDE3EA] flex items-center justify-center p-4 sm:p-6 lg:p-8 login-playfair font-playfair">
+    <div className="min-h-[100dvh] w-full bg-[#DDE3EA] flex items-center justify-center p-2.5 sm:p-6 lg:p-8 login-playfair font-playfair overflow-x-hidden">
       {/* Outer Card with Rounded Corners & Deep Drop Shadow */}
-      <div className="w-full max-w-4xl bg-white rounded-[32px] shadow-2xl shadow-slate-400/30 overflow-hidden flex flex-col md:flex-row relative border border-slate-200/60 min-h-[540px]">
+      <div className="w-full max-w-4xl bg-white rounded-2xl sm:rounded-3xl md:rounded-[32px] shadow-xl sm:shadow-2xl shadow-slate-400/30 overflow-hidden flex flex-col md:flex-row relative border border-slate-200/60 my-auto">
         
         {/* ================= LEFT SIDE: Brand Hero (Navy/Blue Gradient) ================= */}
-        <div className="w-full md:w-[42%] bg-gradient-to-br from-[#142746] via-[#173868] to-[#1f4a88] text-white p-8 sm:p-10 flex flex-col justify-between items-center text-center relative overflow-hidden shrink-0">
+        <div className="w-full md:w-[42%] bg-gradient-to-br from-[#142746] via-[#173868] to-[#1f4a88] text-white p-5 sm:p-7 md:p-10 flex flex-col justify-between items-center text-center relative overflow-hidden shrink-0">
           
           {/* Subtle Background Stars / Ambient Circles */}
           <div className="absolute top-4 left-6 w-32 h-32 bg-white/5 rounded-full blur-2xl pointer-events-none" />
           <div className="absolute bottom-6 right-6 w-40 h-40 bg-[#E6AE43]/10 rounded-full blur-2xl pointer-events-none" />
 
-          {/* Top spacer for balance */}
+          {/* Top spacer for desktop balance */}
           <div className="hidden md:block h-2" />
 
-          {/* Centered Brand Content (Raised to optical center) */}
+          {/* Centered Brand Content */}
           <div className="relative z-10 flex flex-col items-center max-w-xs my-auto">
             {/* Top Label */}
-            <span className="text-xs uppercase tracking-widest text-slate-200 font-semibold opacity-90 mb-5">
+            <span className="text-[10px] md:text-xs uppercase tracking-widest text-slate-200 font-semibold opacity-90 mb-1.5 md:mb-5">
               Welcome to
             </span>
 
             {/* Circular White Badge for Logo */}
-            <div className="w-24 h-24 rounded-full bg-white flex items-center justify-center shadow-xl shadow-black/20 p-4 border-4 border-white/80 transition-transform duration-300 hover:scale-105">
+            <div className="w-14 h-14 sm:w-18 sm:h-18 md:w-24 md:h-24 rounded-full bg-white flex items-center justify-center shadow-xl shadow-black/20 p-2.5 md:p-4 border-2 md:border-4 border-white/80 transition-transform duration-300 hover:scale-105">
               <img
                 src="/logo.png"
                 alt="Maraayn Logo"
-                className="w-16 h-16 object-contain"
+                className="w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 object-contain"
               />
             </div>
 
             {/* Brand Title */}
-            <h1 className="mt-5 text-xl sm:text-2xl font-extrabold tracking-tight text-white leading-snug">
+            <h1 className="mt-2.5 md:mt-5 text-base sm:text-xl md:text-2xl font-extrabold tracking-tight text-white leading-snug">
               Maraayn Management System
             </h1>
 
             {/* Brief Description */}
-            <p className="mt-3 text-[11px] sm:text-xs text-slate-200/80 leading-relaxed">
+            <p className="mt-1 md:mt-3 text-[10px] sm:text-xs text-slate-200/80 leading-relaxed line-clamp-2 md:line-clamp-none">
               Multi-tenant management system for retail shops, pharmacies, supermarkets, cafés, and wholesale businesses.
             </p>
           </div>
 
           {/* Developer Credit at Bottom */}
-          <div className="relative z-10 pt-4 text-[11px] text-slate-200/80 font-medium tracking-wider select-none">
+          <div className="relative z-10 pt-2 md:pt-4 text-[10px] md:text-[11px] text-slate-200/80 font-medium tracking-wider select-none">
             Developer By Anas Abdiwahid
           </div>
 
@@ -149,7 +149,7 @@ export const LoginPage: React.FC = () => {
 
           {/* Mobile Cloud Scallop Divider (Bottom Edge of Left Panel) */}
           <svg
-            className="md:hidden absolute left-0 right-0 -bottom-[1px] w-full h-10 pointer-events-none z-20"
+            className="md:hidden absolute left-0 right-0 -bottom-[1px] w-full h-6 pointer-events-none z-20"
             viewBox="0 0 540 50"
             preserveAspectRatio="none"
             fill="none"
@@ -162,11 +162,11 @@ export const LoginPage: React.FC = () => {
         </div>
 
         {/* ================= RIGHT SIDE: Login Form (White Background) ================= */}
-        <div className="w-full md:w-[58%] bg-white p-8 sm:p-12 lg:p-14 flex flex-col justify-center relative">
+        <div className="w-full md:w-[58%] bg-white p-5 sm:p-8 md:p-12 lg:p-14 flex flex-col justify-center relative">
           
           <div className="max-w-md w-full mx-auto">
-            {/* Brand Logo */}
-            <div className="mb-5 flex items-center">
+            {/* Brand Logo - Visible on desktop only to avoid mobile duplication */}
+            <div className="hidden md:flex mb-5 items-center">
               <img
                 src="/logo.png"
                 alt="Maraayn Management System"
@@ -175,30 +175,30 @@ export const LoginPage: React.FC = () => {
             </div>
 
             {/* Header */}
-            <div className="mb-8">
-              <h2 className="text-2xl sm:text-3xl font-extrabold text-[#142746] tracking-tight">
+            <div className="mb-4 sm:mb-6 md:mb-8">
+              <h2 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-[#142746] tracking-tight">
                 Sign in to your account
               </h2>
-              <p className="text-xs text-slate-400 mt-1">
+              <p className="text-[11px] sm:text-xs text-slate-400 mt-1">
                 Enter your Maraayn credentials to proceed
               </p>
             </div>
 
             {/* Error Message */}
             {error && (
-              <div className="mb-6 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-start space-x-2">
+              <div className="mb-4 sm:mb-6 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-start space-x-2">
                 <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
                 <span>{error}</span>
               </div>
             )}
 
-            <form onSubmit={handleSubmit} autoComplete="off" className="space-y-5">
+            <form onSubmit={handleSubmit} autoComplete="off" className="space-y-3.5 sm:space-y-5">
               {/* Email / Username Input */}
               <div className="space-y-1.5">
                 <label className="block text-xs font-bold text-slate-700 tracking-wide">
                   E-mail Address or Username
                 </label>
-                <div className="group relative rounded-2xl border border-slate-200 bg-slate-50/70 hover:bg-slate-50 focus-within:bg-white focus-within:border-[#142746] focus-within:ring-4 focus-within:ring-[#142746]/10 transition-all duration-200 shadow-sm flex items-center px-4 py-3">
+                <div className="group relative rounded-2xl border border-slate-200 bg-slate-50/70 hover:bg-slate-50 focus-within:bg-white focus-within:border-[#142746] focus-within:ring-4 focus-within:ring-[#142746]/10 transition-all duration-200 shadow-sm flex items-center px-3.5 sm:px-4 py-2.5 sm:py-3">
                   <div className="text-slate-400 group-focus-within:text-[#142746] transition-colors mr-3 shrink-0">
                     <User className="w-4 h-4" />
                   </div>
@@ -221,7 +221,7 @@ export const LoginPage: React.FC = () => {
                     }}
                     placeholder="Enter your email or username"
                     required
-                    className="w-full bg-transparent text-xs sm:text-sm text-slate-800 focus:outline-none placeholder-slate-400 font-medium"
+                    className="w-full bg-transparent text-base md:text-sm text-slate-800 focus:outline-none placeholder-slate-400 font-medium"
                   />
                   {identifier && (
                     <div className="ml-2 shrink-0">
@@ -246,7 +246,7 @@ export const LoginPage: React.FC = () => {
                     Forgot password?
                   </a>
                 </div>
-                <div className="group relative rounded-2xl border border-slate-200 bg-slate-50/70 hover:bg-slate-50 focus-within:bg-white focus-within:border-[#142746] focus-within:ring-4 focus-within:ring-[#142746]/10 transition-all duration-200 shadow-sm flex items-center px-4 py-3">
+                <div className="group relative rounded-2xl border border-slate-200 bg-slate-50/70 hover:bg-slate-50 focus-within:bg-white focus-within:border-[#142746] focus-within:ring-4 focus-within:ring-[#142746]/10 transition-all duration-200 shadow-sm flex items-center px-3.5 sm:px-4 py-2.5 sm:py-3">
                   <div className="text-slate-400 group-focus-within:text-[#142746] transition-colors mr-3 shrink-0">
                     <Lock className="w-4 h-4" />
                   </div>
@@ -269,7 +269,7 @@ export const LoginPage: React.FC = () => {
                     }}
                     placeholder="Enter your password"
                     required
-                    className="w-full bg-transparent text-xs sm:text-sm text-slate-800 focus:outline-none placeholder-slate-400 font-medium tracking-wide"
+                    className="w-full bg-transparent text-base md:text-sm text-slate-800 focus:outline-none placeholder-slate-400 font-medium tracking-wide"
                   />
                   <button
                     type="button"
