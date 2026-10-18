@@ -82,14 +82,17 @@ export const LoginPage: React.FC = () => {
       <div className="w-full max-w-4xl bg-white rounded-[32px] shadow-2xl shadow-slate-400/30 overflow-hidden flex flex-col md:flex-row relative border border-slate-200/60 min-h-[540px]">
         
         {/* ================= LEFT SIDE: Brand Hero (Navy/Blue Gradient) ================= */}
-        <div className="w-full md:w-[42%] bg-gradient-to-br from-[#142746] via-[#173868] to-[#1f4a88] text-white p-8 sm:p-10 flex flex-col justify-center items-center text-center relative overflow-hidden shrink-0">
+        <div className="w-full md:w-[42%] bg-gradient-to-br from-[#142746] via-[#173868] to-[#1f4a88] text-white p-8 sm:p-10 flex flex-col justify-between items-center text-center relative overflow-hidden shrink-0">
           
           {/* Subtle Background Stars / Ambient Circles */}
           <div className="absolute top-4 left-6 w-32 h-32 bg-white/5 rounded-full blur-2xl pointer-events-none" />
           <div className="absolute bottom-6 right-6 w-40 h-40 bg-[#E6AE43]/10 rounded-full blur-2xl pointer-events-none" />
 
+          {/* Top spacer for balance */}
+          <div className="hidden md:block h-2" />
+
           {/* Centered Brand Content (Raised to optical center) */}
-          <div className="relative z-10 flex flex-col items-center max-w-xs -mt-4">
+          <div className="relative z-10 flex flex-col items-center max-w-xs my-auto">
             {/* Top Label */}
             <span className="text-xs uppercase tracking-widest text-slate-200 font-semibold opacity-90 mb-5">
               Welcome to
@@ -113,6 +116,11 @@ export const LoginPage: React.FC = () => {
             <p className="mt-3 text-[11px] sm:text-xs text-slate-200/80 leading-relaxed">
               Multi-tenant management system for retail shops, pharmacies, supermarkets, cafés, and wholesale businesses.
             </p>
+          </div>
+
+          {/* Developer Credit at Bottom */}
+          <div className="relative z-10 pt-4 text-[11px] text-slate-200/80 font-medium tracking-wider select-none">
+            Developer By Anas Abdiwahid
           </div>
 
           {/* Desktop Cloud Scallop Divider (Right Edge of Left Panel) */}
