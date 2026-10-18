@@ -368,17 +368,19 @@ export const LoginPage: React.FC = () => {
       </div>
 
       {/* Developer Credit - Mobile only at bottom of screen below card */}
-      <div className="md:hidden relative z-10 pt-2 pb-7 text-center text-xs text-slate-200 font-medium tracking-wider select-none">
-        <span>Developer By </span>
-        <a
-          href="https://anazabdiwahid.netlify.app/"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-[#E6AE43] font-bold hover:text-[#F8C76A] hover:underline underline-offset-2 transition-colors cursor-pointer"
-          title="Visit Anas Abdiwahid Portfolio"
-        >
-          Anas Abdiwahid
-        </a>
+      <div className="md:hidden relative z-10 mt-3 mb-10 text-center text-xs text-slate-200 font-medium tracking-wider select-none">
+        <div className="inline-flex items-center px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/10 shadow-sm">
+          <span>Developer By&nbsp;</span>
+          <a
+            href="https://anazabdiwahid.netlify.app/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[#E6AE43] font-bold hover:text-[#F8C76A] hover:underline underline-offset-2 transition-colors cursor-pointer"
+            title="Visit Anas Abdiwahid Portfolio"
+          >
+            Anas Abdiwahid
+          </a>
+        </div>
       </div>
     </div>
   );
