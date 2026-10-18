@@ -77,7 +77,7 @@ export const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="relative min-h-[100dvh] w-full bg-gradient-to-br from-[#0a1626] via-[#10223d] to-[#162f55] flex items-center justify-center p-2.5 sm:p-6 lg:p-8 login-playfair font-playfair overflow-hidden">
+    <div className="relative min-h-[100dvh] w-full bg-gradient-to-br from-[#0a1626] via-[#10223d] to-[#162f55] flex flex-col items-center justify-center p-2.5 sm:p-6 lg:p-8 login-playfair font-playfair overflow-hidden">
       
       {/* ================= ANIMATED BACKGROUND ELEMENTS ================= */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
@@ -149,8 +149,8 @@ export const LoginPage: React.FC = () => {
             </p>
           </div>
 
-          {/* Developer Credit at Bottom */}
-          <div className="relative z-10 pt-2 md:pt-4 text-[10px] md:text-[11px] text-slate-200/90 font-medium tracking-wider">
+          {/* Developer Credit - Desktop only inside left panel */}
+          <div className="hidden md:block relative z-10 pt-4 text-[11px] text-slate-200/90 font-medium tracking-wider">
             <span>Developer By </span>
             <a
               href="https://anazabdiwahid.netlify.app/"
@@ -365,6 +365,20 @@ export const LoginPage: React.FC = () => {
             </form>
           </div>
         </div>
+      </div>
+
+      {/* Developer Credit - Mobile only at bottom of screen below card */}
+      <div className="md:hidden relative z-10 pt-3 pb-1 text-center text-xs text-slate-300/90 font-medium tracking-wider">
+        <span>Developer By </span>
+        <a
+          href="https://anazabdiwahid.netlify.app/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-[#E6AE43] font-bold hover:text-[#F8C76A] hover:underline underline-offset-2 transition-colors cursor-pointer"
+          title="Visit Anas Abdiwahid Portfolio"
+        >
+          Anas Abdiwahid
+        </a>
       </div>
     </div>
   );
