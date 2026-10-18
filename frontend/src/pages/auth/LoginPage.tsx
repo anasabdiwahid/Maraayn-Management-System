@@ -11,7 +11,10 @@ export const LoginPage: React.FC = () => {
     const isRemembered = localStorage.getItem('maraayn_remember_me') === 'true';
     return isRemembered ? (localStorage.getItem('maraayn_saved_identifier') || '') : '';
   });
-  const [password, setPassword] = useState('');
+  const [password, setPassword] = useState(() => {
+    const isRemembered = localStorage.getItem('maraayn_remember_me') === 'true';
+    return isRemembered ? (localStorage.getItem('maraayn_saved_password') || '') : '';
+  });
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -24,11 +27,15 @@ export const LoginPage: React.FC = () => {
     if (!checked) {
       localStorage.removeItem('maraayn_remember_me');
       localStorage.removeItem('maraayn_saved_identifier');
-    } else if (identifier.trim()) {
-      localStorage.setItem('maraayn_remember_me', 'true');
-      localStorage.setItem('maraayn_saved_identifier', identifier.trim());
+      localStorage.removeItem('maraayn_saved_password');
     } else {
       localStorage.setItem('maraayn_remember_me', 'true');
+      if (identifier.trim()) {
+        localStorage.setItem('maraayn_saved_identifier', identifier.trim());
+      }
+      if (password) {
+        localStorage.setItem('maraayn_saved_password', password);
+      }
     }
   };
 
@@ -39,12 +46,14 @@ export const LoginPage: React.FC = () => {
       return;
     }
 
-    if (rememberMe && identifier.trim()) {
+    if (rememberMe) {
       localStorage.setItem('maraayn_remember_me', 'true');
-      localStorage.setItem('maraayn_saved_identifier', identifier.trim());
+      if (identifier.trim()) localStorage.setItem('maraayn_saved_identifier', identifier.trim());
+      if (password) localStorage.setItem('maraayn_saved_password', password);
     } else {
       localStorage.removeItem('maraayn_remember_me');
       localStorage.removeItem('maraayn_saved_identifier');
+      localStorage.removeItem('maraayn_saved_password');
     }
 
     setError(null);
@@ -239,7 +248,17 @@ export const LoginPage: React.FC = () => {
                     type={showPassword ? 'text' : 'password'}
                     autoComplete="new-password"
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setPassword(val);
+                      if (rememberMe) {
+                        if (val) {
+                          localStorage.setItem('maraayn_saved_password', val);
+                        } else {
+                          localStorage.removeItem('maraayn_saved_password');
+                        }
+                      }
+                    }}
                     placeholder="Enter your password"
                     required
                     className="w-full bg-transparent text-xs sm:text-sm text-slate-800 focus:outline-none placeholder-slate-400 font-medium tracking-wide"
