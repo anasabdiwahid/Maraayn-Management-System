@@ -29,6 +29,7 @@ export default {
       },
       fontFamily: {
         sans: ['Inter', 'Plus Jakarta Sans', 'system-ui', '-apple-system', 'sans-serif'],
+        playfair: ['"Playfair Display"', 'Georgia', 'serif'],
       },
       boxShadow: {
         'brand': '0 4px 20px -2px rgba(20, 39, 70, 0.08)',
