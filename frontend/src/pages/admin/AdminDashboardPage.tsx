@@ -10,6 +10,10 @@ import {
   PlusCircle,
   Clock,
   ArrowUpRight,
+  ChevronDown,
+  ChevronUp,
+  Eye,
+  X,
 } from 'lucide-react';
 import {
   AreaChart,
@@ -28,6 +32,8 @@ import { StatCard } from '../../components/common/StatCard.js';
 export const AdminDashboardPage: React.FC = () => {
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [showRecentMarkets, setShowRecentMarkets] = useState(false);
+  const [selectedMarket, setSelectedMarket] = useState<any | null>(null);
 
   useEffect(() => {
     const fetchDashboard = async () => {
@@ -184,51 +190,90 @@ export const AdminDashboardPage: React.FC = () => {
         {/* Recent Markets */}
         <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-bold text-slate-800">Recent Markets</h3>
-            <NavLink to="/admin/markets" className="text-xs font-semibold text-brand-navy hover:underline flex items-center">
-              <span>View All</span>
-              <ArrowUpRight className="w-3.5 h-3.5 ml-1" />
-            </NavLink>
+            <div className="flex items-center space-x-2">
+              <h3 className="text-sm font-bold text-slate-800">Recent Markets</h3>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+                {stats?.recentMarkets?.length || 0}
+              </span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <button
+                type="button"
+                onClick={() => setShowRecentMarkets(!showRecentMarkets)}
+                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-[#142746] text-white hover:bg-[#1a3868] transition-all shadow-sm"
+              >
+                <Eye className="w-3.5 h-3.5" />
+                <span>{showRecentMarkets ? 'Hide' : 'Show'}</span>
+                {showRecentMarkets ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+              </button>
+
+              <NavLink to="/admin/markets" className="text-xs font-semibold text-brand-navy hover:underline flex items-center">
+                <span>View All</span>
+                <ArrowUpRight className="w-3.5 h-3.5 ml-1" />
+              </NavLink>
+            </div>
           </div>
 
-          <div className="divide-y divide-slate-100">
-            {stats?.recentMarkets?.map((m: any) => {
-              const quotaGb = (m.storageQuotaBytes || 0) / (1024 * 1024 * 1024);
-              const usedMb = ((m.storageUsedBytes || 0) / (1024 * 1024)).toFixed(0);
+          {showRecentMarkets ? (
+            <div className="divide-y divide-slate-100 animate-fadeIn">
+              {stats?.recentMarkets?.map((m: any) => {
+                const quotaGb = (m.storageQuotaBytes || 0) / (1024 * 1024 * 1024);
+                const usedMb = ((m.storageUsedBytes || 0) / (1024 * 1024)).toFixed(0);
 
-              return (
-                <div key={m._id} className="py-3 flex items-center justify-between text-xs">
-                  <div className="flex items-center space-x-3">
-                    <img
-                      src={m.logoUrl || '/logo.png'}
-                      alt={m.name}
-                      className="w-9 h-9 rounded-lg object-contain bg-slate-50 border p-1"
-                      onError={(e) => ((e.target as any).src = '/logo.png')}
-                    />
-                    <div>
-                      <p className="font-bold text-slate-800">{m.name}</p>
-                      <span className="text-[10px] text-slate-400 font-mono">{m.businessCode} • {m.category}</span>
+                return (
+                  <div
+                    key={m._id}
+                    onClick={() => setSelectedMarket(m)}
+                    className="py-3 px-2 flex items-center justify-between text-xs cursor-pointer hover:bg-slate-50/80 rounded-xl transition-colors group"
+                    title="Click to view market details"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <img
+                        src={m.logoUrl || '/logo.png'}
+                        alt={m.name}
+                        className="w-9 h-9 rounded-lg object-contain bg-slate-50 border p-1 group-hover:scale-105 transition-transform"
+                        onError={(e) => ((e.target as any).src = '/logo.png')}
+                      />
+                      <div>
+                        <p className="font-bold text-slate-800 group-hover:text-brand-navy">{m.name}</p>
+                        <span className="text-[10px] text-slate-400 font-mono">{m.businessCode} • {m.category}</span>
+                      </div>
+                    </div>
+
+                    <div className="text-right">
+                      <span
+                        className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                          m.status === 'ACTIVE'
+                            ? 'bg-emerald-100 text-emerald-800'
+                            : m.status === 'SUSPENDED'
+                            ? 'bg-amber-100 text-amber-800'
+                            : 'bg-rose-100 text-rose-800'
+                        }`}
+                      >
+                        {m.status}
+                      </span>
+                      <p className="text-[10px] text-slate-400 mt-1">{usedMb}MB / {quotaGb.toFixed(0)}GB</p>
                     </div>
                   </div>
-
-                  <div className="text-right">
-                    <span
-                      className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                        m.status === 'ACTIVE'
-                          ? 'bg-emerald-100 text-emerald-800'
-                          : m.status === 'SUSPENDED'
-                          ? 'bg-amber-100 text-amber-800'
-                          : 'bg-rose-100 text-rose-800'
-                      }`}
-                    >
-                      {m.status}
-                    </span>
-                    <p className="text-[10px] text-slate-400 mt-1">{usedMb}MB / {quotaGb.toFixed(0)}GB</p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div 
+              onClick={() => setShowRecentMarkets(true)}
+              className="py-8 px-4 text-center border-2 border-dashed border-slate-200 rounded-xl cursor-pointer hover:border-[#142746] hover:bg-slate-50/70 transition-all group"
+            >
+              <Store className="w-8 h-8 text-slate-300 mx-auto group-hover:text-[#142746] transition-colors" />
+              <p className="mt-2 text-xs font-bold text-slate-600">Recent Markets are hidden</p>
+              <button
+                type="button"
+                className="mt-2 inline-flex items-center space-x-1.5 px-3.5 py-1.5 text-xs font-bold text-white bg-[#142746] rounded-lg hover:bg-[#1a3868] transition-colors shadow-sm"
+              >
+                <Eye className="w-3.5 h-3.5" />
+                <span>Show Recent Markets ({stats?.recentMarkets?.length || 0})</span>
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Administrative Audit Logs */}
@@ -256,9 +301,97 @@ export const AdminDashboardPage: React.FC = () => {
             ) : (
               <div className="text-center py-8 text-xs text-slate-400">No activity logs recorded yet</div>
             )}
-          </div>
         </div>
       </div>
+
+      {/* Market Details Modal (When clicked / Show is invoked) */}
+      {selectedMarket && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 relative animate-scaleUp">
+            <button
+              type="button"
+              onClick={() => setSelectedMarket(null)}
+              className="absolute top-4 right-4 p-1.5 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center space-x-4 mb-5">
+              <img
+                src={selectedMarket.logoUrl || '/logo.png'}
+                alt={selectedMarket.name}
+                className="w-14 h-14 rounded-2xl object-contain bg-slate-50 border p-2 shadow-sm"
+                onError={(e) => ((e.target as any).src = '/logo.png')}
+              />
+              <div>
+                <h3 className="text-lg font-extrabold text-[#142746]">{selectedMarket.name}</h3>
+                <p className="text-xs text-slate-500 font-mono">{selectedMarket.businessCode} • {selectedMarket.category}</p>
+              </div>
+            </div>
+
+            <div className="space-y-3 bg-slate-50 p-4 rounded-xl border border-slate-100 text-xs">
+              <div className="flex justify-between items-center">
+                <span className="text-slate-500 font-medium">Status:</span>
+                <span
+                  className={`px-2.5 py-0.5 rounded-full font-bold text-[11px] ${
+                    selectedMarket.status === 'ACTIVE'
+                      ? 'bg-emerald-100 text-emerald-800'
+                      : selectedMarket.status === 'SUSPENDED'
+                      ? 'bg-amber-100 text-amber-800'
+                      : 'bg-rose-100 text-rose-800'
+                  }`}
+                >
+                  {selectedMarket.status}
+                </span>
+              </div>
+
+              <div className="flex justify-between items-center">
+                <span className="text-slate-500 font-medium">Storage Quota:</span>
+                <span className="font-bold text-slate-700">
+                  {((selectedMarket.storageUsedBytes || 0) / (1024 * 1024)).toFixed(0)}MB / {((selectedMarket.storageQuotaBytes || 0) / (1024 * 1024 * 1024)).toFixed(0)}GB
+                </span>
+              </div>
+
+              {selectedMarket.contactEmail && (
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-500 font-medium">Email:</span>
+                  <span className="font-bold text-slate-700">{selectedMarket.contactEmail}</span>
+                </div>
+              )}
+
+              {selectedMarket.contactPhone && (
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-500 font-medium">Phone:</span>
+                  <span className="font-bold text-slate-700">{selectedMarket.contactPhone}</span>
+                </div>
+              )}
+
+              {selectedMarket.createdAt && (
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-500 font-medium">Registered:</span>
+                  <span className="font-bold text-slate-700">{new Date(selectedMarket.createdAt).toLocaleDateString()}</span>
+                </div>
+              )}
+            </div>
+
+            <div className="mt-5 flex space-x-3">
+              <NavLink
+                to={`/admin/markets`}
+                className="flex-1 text-center py-2.5 rounded-xl bg-[#142746] text-white font-bold text-xs hover:bg-[#1a3868] transition-colors shadow-sm"
+              >
+                Manage Markets
+              </NavLink>
+              <button
+                type="button"
+                onClick={() => setSelectedMarket(null)}
+                className="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-bold text-xs hover:bg-slate-50 transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
