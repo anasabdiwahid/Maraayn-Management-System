@@ -70,7 +70,7 @@ export const BusinessLayout: React.FC = () => {
 
       {/* Business Sidebar */}
       <aside
-        className={`fixed md:sticky top-0 h-screen w-64 bg-brand-navy text-slate-300 flex flex-col z-40 transition-transform duration-300 ease-in-out ${
+        className={`fixed md:sticky top-0 h-[100dvh] w-64 bg-brand-navy text-slate-300 flex flex-col z-40 transition-transform duration-300 ease-in-out ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         }`}
       >
@@ -140,7 +140,7 @@ export const BusinessLayout: React.FC = () => {
         </div>
 
         {/* User Profile & Logout Bottom */}
-        <div className="p-4 border-t border-slate-700/60 bg-brand-navy-dark/60">
+        <div className="p-4 pb-10 md:pb-4 border-t border-slate-700/60 bg-brand-navy-dark/60">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2.5 min-w-0">
               <div className="w-8 h-8 rounded-full bg-brand-amber text-brand-navy font-bold flex items-center justify-center text-xs shrink-0">
@@ -156,7 +156,7 @@ export const BusinessLayout: React.FC = () => {
             <button
               onClick={logout}
               title="Logout"
-              className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded-lg transition-colors"
+              className="p-2 text-slate-300 hover:text-rose-400 hover:bg-slate-800 rounded-xl transition-colors bg-slate-800/40 border border-slate-700/40 shrink-0"
             >
               <LogOut className="w-4 h-4" />
             </button>
