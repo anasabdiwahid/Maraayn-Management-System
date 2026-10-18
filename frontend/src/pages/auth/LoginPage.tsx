@@ -77,7 +77,7 @@ export const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#DDE3EA] flex items-center justify-center p-4 sm:p-6 lg:p-8 font-playfair">
+    <div className="min-h-screen bg-[#DDE3EA] flex items-center justify-center p-4 sm:p-6 lg:p-8 login-playfair font-playfair">
       {/* Outer Card with Rounded Corners & Deep Drop Shadow */}
       <div className="w-full max-w-4xl bg-white rounded-[32px] shadow-2xl shadow-slate-400/30 overflow-hidden flex flex-col md:flex-row relative border border-slate-200/60 min-h-[540px]">
         
