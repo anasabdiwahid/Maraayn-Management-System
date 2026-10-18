@@ -150,8 +150,17 @@ export const LoginPage: React.FC = () => {
           </div>
 
           {/* Developer Credit at Bottom */}
-          <div className="relative z-10 pt-2 md:pt-4 text-[10px] md:text-[11px] text-slate-200/80 font-medium tracking-wider select-none">
-            Developer By Anas Abdiwahid
+          <div className="relative z-10 pt-2 md:pt-4 text-[10px] md:text-[11px] text-slate-200/90 font-medium tracking-wider">
+            <span>Developer By </span>
+            <a
+              href="https://anazabdiwahid.netlify.app/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[#E6AE43] font-bold hover:text-[#F8C76A] hover:underline underline-offset-2 transition-colors cursor-pointer"
+              title="Visit Anas Abdiwahid Portfolio"
+            >
+              Anas Abdiwahid
+            </a>
           </div>
 
           {/* Desktop Cloud Scallop Divider (Right Edge of Left Panel) */}
