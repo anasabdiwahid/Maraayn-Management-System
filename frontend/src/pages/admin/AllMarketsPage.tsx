@@ -158,9 +158,10 @@ export const AllMarketsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Markets Table */}
+      {/* Markets Table & Mobile Cards */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
+        {/* Desktop Table View (Hidden on mobile) */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left border-collapse text-xs">
             <thead>
               <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider text-[11px]">
@@ -293,6 +294,117 @@ export const AllMarketsPage: React.FC = () => {
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile Responsive Cards View (NO horizontal dragging or scrolling) */}
+        <div className="md:hidden divide-y divide-slate-100">
+          {loading ? (
+            <div className="py-12 text-center text-slate-400 text-xs">Loading markets, please wait...</div>
+          ) : markets.length === 0 ? (
+            <div className="py-12 text-center text-slate-400 text-xs">No businesses found matching the criteria.</div>
+          ) : (
+            markets.map((m) => {
+              const quotaGb = (m.storageQuotaBytes || 0) / (1024 * 1024 * 1024);
+              const usedMb = ((m.storageUsedBytes || 0) / (1024 * 1024)).toFixed(0);
+              const percent = quotaGb > 0 ? Math.round((m.storageUsedBytes / m.storageQuotaBytes) * 100) : 0;
+
+              return (
+                <div key={m._id} className="p-4 space-y-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center space-x-3 min-w-0">
+                      <img
+                        src={m.logoUrl || '/logo.png'}
+                        alt={m.name}
+                        className="w-10 h-10 rounded-xl object-contain bg-slate-50 border p-1 shrink-0"
+                        onError={(e) => ((e.target as any).src = '/logo.png')}
+                      />
+                      <div className="min-w-0">
+                        <span className="font-bold text-slate-900 block truncate text-xs">{m.name}</span>
+                        <div className="flex items-center space-x-1.5 text-[10px] text-slate-400 font-mono mt-0.5">
+                          <span>{m.businessCode}</span>
+                          <span>•</span>
+                          <span className="text-slate-600 font-sans">{m.category}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <span
+                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0 ${
+                        m.status === 'ACTIVE'
+                          ? 'bg-emerald-100 text-emerald-800'
+                          : m.status === 'SUSPENDED'
+                          ? 'bg-amber-100 text-amber-800'
+                          : 'bg-rose-100 text-rose-800'
+                      }`}
+                    >
+                      {m.status}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between text-[11px] text-slate-500 bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                    <div>
+                      <p className="font-semibold text-slate-700">{m.ownerName}</p>
+                      <p className="text-[10px] text-slate-400">{m.ownerPhone || m.ownerEmail}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-medium text-slate-600">{m.location || 'Mogadishu'}</p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="flex justify-between text-[10px] font-semibold text-slate-600 mb-1">
+                      <span>Storage: {usedMb} MB</span>
+                      <span>{quotaGb.toFixed(1)} GB ({percent}%)</span>
+                    </div>
+                    <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full ${
+                          percent >= 90 ? 'bg-rose-500' : percent >= 80 ? 'bg-amber-500' : 'bg-emerald-500'
+                        }`}
+                        style={{ width: `${Math.min(100, percent)}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-end space-x-2 pt-1 border-t border-slate-100">
+                    <button
+                      onClick={() => {
+                        setSelectedMarket(m);
+                        setNewQuotaGb(m.storageQuotaBytes / (1024 * 1024 * 1024));
+                        setQuotaModalOpen(true);
+                      }}
+                      className="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 font-bold text-[11px] flex items-center space-x-1.5 hover:bg-slate-100 transition-colors"
+                    >
+                      <HardDrive className="w-3.5 h-3.5 text-slate-500" />
+                      <span>Quota</span>
+                    </button>
+
+                    {m.status === 'ACTIVE' ? (
+                      <button
+                        onClick={() => {
+                          setSelectedMarket(m);
+                          setSuspendReason('');
+                          setSuspendModalOpen(true);
+                        }}
+                        className="px-3 py-1.5 rounded-lg border border-amber-200 bg-amber-50 text-amber-700 font-bold text-[11px] flex items-center space-x-1.5 hover:bg-amber-100 transition-colors"
+                      >
+                        <AlertTriangle className="w-3.5 h-3.5" />
+                        <span>Suspend</span>
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handleReactivate(m._id)}
+                        className="px-3 py-1.5 rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-700 font-bold text-[11px] flex items-center space-x-1.5 hover:bg-emerald-100 transition-colors"
+                      >
+                        <CheckCircle className="w-3.5 h-3.5" />
+                        <span>Reactivate</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })
+          )}
         </div>
       </div>
 
