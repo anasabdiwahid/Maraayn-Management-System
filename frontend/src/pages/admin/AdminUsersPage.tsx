@@ -806,22 +806,18 @@ export const AdminUsersPage: React.FC = () => {
         </div>
       )}
 
-      {/* STATUS TOGGLE CONFIRMATION MODAL (EXACT BINDER CLIP NOTE CARD DESIGN WITH 'X' BUTTON) */}
+      {/* STATUS TOGGLE CONFIRMATION MODAL (SINGLE UNIFIED CLEAN CARD WITH BINDER CLIP & X BUTTON) */}
       {statusModalOpen && statusTargetAdmin && (
-        <div className="fixed inset-0 z-50 bg-black/65 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
-          <div className="relative max-w-md sm:max-w-lg w-full mx-auto pt-9 animate-scaleUp">
-            {/* 3D Binder Clip at the top center */}
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
+          <div className="relative max-w-lg w-full mx-auto pt-10 animate-scaleUp">
+            {/* 3D Binder Clip at top center */}
             <BinderClipIcon />
 
-            {/* Stacked Paper Sheets Behind (Matching user's reference note card) */}
-            <div className="absolute inset-x-2 -top-1 bottom-2 bg-slate-200/90 rounded-2xl transform -rotate-1 border border-slate-300/80 shadow-xs" />
-            <div className="absolute inset-x-1 top-0 bottom-1 bg-slate-100 rounded-2xl transform rotate-1 border border-slate-200 shadow-xs" />
-
-            {/* Main Front Note Paper */}
+            {/* Single Unified Note Card (Hal Naqshad oo Keliya) */}
             <div
-              className="relative bg-white rounded-2xl border-2 border-slate-300 shadow-2xl p-6 pt-7 text-center overflow-hidden"
+              className="relative bg-white rounded-3xl border border-slate-200/90 shadow-2xl p-6 sm:p-7 pt-8 text-center"
               style={{
-                backgroundImage: 'repeating-linear-gradient(transparent, transparent 29px, #e8edf4 30px)',
+                backgroundImage: 'repeating-linear-gradient(transparent, transparent 31px, #f4f6f9 32px)',
               }}
             >
               {/* 'X' Close Button on Top Right */}
@@ -831,7 +827,7 @@ export const AdminUsersPage: React.FC = () => {
                   setStatusModalOpen(false);
                   setStatusTargetAdmin(null);
                 }}
-                className="absolute top-4 right-4 p-1.5 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors z-30"
+                className="absolute top-4 right-4 p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors z-20"
                 title="Ka Noqo (Close)"
               >
                 <X className="w-5 h-5" />
@@ -839,11 +835,11 @@ export const AdminUsersPage: React.FC = () => {
 
               {/* System Logo & Official Header */}
               <div className="flex items-center space-x-3 pb-3 mb-4 border-b border-slate-200/90 pr-8 text-left">
-                <div className="bg-white p-1 rounded-xl border border-slate-200 shadow-xs flex items-center justify-center shrink-0">
+                <div className="bg-slate-50 p-1.5 rounded-xl border border-slate-200 shadow-xs flex items-center justify-center shrink-0">
                   <img src="/logo.png" alt="Maraayn Logo" className="h-8 max-h-8 object-contain" />
                 </div>
                 <div className="min-w-0">
-                  <h4 className="font-extrabold text-xs sm:text-sm text-[#142746] tracking-tight leading-none truncate">
+                  <h4 className="font-extrabold text-sm text-[#142746] tracking-tight leading-none truncate">
                     Maraayn Control Center
                   </h4>
                   <p className="text-[10px] text-brand-amber font-bold tracking-wider uppercase mt-1">
@@ -869,30 +865,32 @@ export const AdminUsersPage: React.FC = () => {
                     <CheckCircle2 className="w-5 h-5" />
                   )}
                 </div>
-                <h3 className="font-extrabold text-slate-900 text-sm sm:text-base text-left">
+                <h3 className="font-extrabold text-slate-900 text-base text-left">
                   {statusTargetAdmin.status === 'ACTIVE'
                     ? 'Xaqiijinta Xanibaadda (Deactivate)'
                     : 'Xaqiijinta Furitaanka (Activate)'}
                 </h3>
               </div>
 
-              {/* Note Details Box */}
-              <div className="bg-white/95 p-3.5 rounded-xl border border-slate-200 shadow-xs my-3 text-left grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
+              {/* Note Details Row (Unified on paper without nested box) */}
+              <div className="py-3 my-3 border-y border-dashed border-slate-200 flex flex-wrap items-center justify-around gap-3 text-xs bg-slate-50/50 rounded-xl">
                 <div>
-                  <span className="text-slate-400 font-bold uppercase text-[10px] block">Maamulaha:</span>
-                  <span className="font-extrabold text-slate-900 truncate block">{statusTargetAdmin.name}</span>
+                  <span className="text-slate-400 font-bold uppercase text-[10px] block">Maamulaha</span>
+                  <span className="font-extrabold text-slate-900 text-sm">{statusTargetAdmin.name}</span>
                 </div>
+                <div className="h-8 w-px bg-slate-200 hidden sm:block" />
                 <div>
-                  <span className="text-slate-400 font-bold uppercase text-[10px] block">Email:</span>
-                  <span className="font-mono text-slate-600 truncate block">{statusTargetAdmin.email}</span>
+                  <span className="text-slate-400 font-bold uppercase text-[10px] block">Email</span>
+                  <span className="font-mono text-slate-700 font-medium">{statusTargetAdmin.email}</span>
                 </div>
+                <div className="h-8 w-px bg-slate-200 hidden sm:block" />
                 <div>
-                  <span className="text-slate-400 font-bold uppercase text-[10px] block">Role-ka:</span>
-                  <span className="font-bold text-brand-navy block">{statusTargetAdmin.platformRole}</span>
+                  <span className="text-slate-400 font-bold uppercase text-[10px] block">Role-ka</span>
+                  <span className="font-bold text-brand-navy">{statusTargetAdmin.platformRole}</span>
                 </div>
               </div>
 
-              <p className="text-xs text-slate-600 leading-relaxed mb-4 text-left sm:text-center">
+              <p className="text-xs text-slate-600 leading-relaxed mb-4 text-center">
                 {statusTargetAdmin.status === 'ACTIVE'
                   ? 'Ma hubtaa inaad xanibto maamulahan? Ma awoodi doono inuu nidaamka soo galo ilaa dib loo furo.'
                   : 'Ma hubtaa inaad dib u furto maamulahan? Wuxuu si toos ah u awoodi doonaa inuu nidaamka galo.'}
@@ -914,7 +912,7 @@ export const AdminUsersPage: React.FC = () => {
                   type="button"
                   onClick={handleToggle}
                   disabled={actionLoading}
-                  className={`px-5 py-2.5 text-white rounded-xl font-bold text-xs transition-all shadow-md disabled:opacity-50 ${
+                  className={`px-6 py-2.5 text-white rounded-xl font-bold text-xs transition-all shadow-md disabled:opacity-50 ${
                     statusTargetAdmin.status === 'ACTIVE'
                       ? 'bg-amber-600 hover:bg-amber-700 shadow-amber-600/20'
                       : 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20'
@@ -932,22 +930,18 @@ export const AdminUsersPage: React.FC = () => {
         </div>
       )}
 
-      {/* DELETE CONFIRMATION MODAL (EXACT BINDER CLIP NOTE CARD DESIGN WITH 'X' BUTTON) */}
+      {/* DELETE CONFIRMATION MODAL (SINGLE UNIFIED CLEAN CARD WITH BINDER CLIP & X BUTTON) */}
       {deleteModalOpen && selectedAdmin && (
-        <div className="fixed inset-0 z-50 bg-black/65 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
-          <div className="relative max-w-md sm:max-w-lg w-full mx-auto pt-9 animate-scaleUp">
-            {/* 3D Binder Clip at the top center */}
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
+          <div className="relative max-w-lg w-full mx-auto pt-10 animate-scaleUp">
+            {/* 3D Binder Clip at top center */}
             <BinderClipIcon />
 
-            {/* Stacked Paper Sheets Behind */}
-            <div className="absolute inset-x-2 -top-1 bottom-2 bg-slate-200/90 rounded-2xl transform -rotate-1 border border-slate-300/80 shadow-xs" />
-            <div className="absolute inset-x-1 top-0 bottom-1 bg-slate-100 rounded-2xl transform rotate-1 border border-slate-200 shadow-xs" />
-
-            {/* Main Front Note Paper */}
+            {/* Single Unified Note Card (Hal Naqshad oo Keliya) */}
             <div
-              className="relative bg-white rounded-2xl border-2 border-slate-300 shadow-2xl p-6 pt-7 text-center overflow-hidden"
+              className="relative bg-white rounded-3xl border border-slate-200/90 shadow-2xl p-6 sm:p-7 pt-8 text-center"
               style={{
-                backgroundImage: 'repeating-linear-gradient(transparent, transparent 29px, #e8edf4 30px)',
+                backgroundImage: 'repeating-linear-gradient(transparent, transparent 31px, #f4f6f9 32px)',
               }}
             >
               {/* 'X' Close Button on Top Right */}
@@ -957,7 +951,7 @@ export const AdminUsersPage: React.FC = () => {
                   setDeleteModalOpen(false);
                   setSelectedAdmin(null);
                 }}
-                className="absolute top-4 right-4 p-1.5 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors z-30"
+                className="absolute top-4 right-4 p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors z-20"
                 title="Ka Noqo (Close)"
               >
                 <X className="w-5 h-5" />
@@ -965,11 +959,11 @@ export const AdminUsersPage: React.FC = () => {
 
               {/* System Logo & Official Header */}
               <div className="flex items-center space-x-3 pb-3 mb-4 border-b border-slate-200/90 pr-8 text-left">
-                <div className="bg-white p-1 rounded-xl border border-slate-200 shadow-xs flex items-center justify-center shrink-0">
+                <div className="bg-slate-50 p-1.5 rounded-xl border border-slate-200 shadow-xs flex items-center justify-center shrink-0">
                   <img src="/logo.png" alt="Maraayn Logo" className="h-8 max-h-8 object-contain" />
                 </div>
                 <div className="min-w-0">
-                  <h4 className="font-extrabold text-xs sm:text-sm text-[#142746] tracking-tight leading-none truncate">
+                  <h4 className="font-extrabold text-sm text-[#142746] tracking-tight leading-none truncate">
                     Maraayn Control Center
                   </h4>
                   <p className="text-[10px] text-rose-600 font-bold tracking-wider uppercase mt-1">
@@ -983,28 +977,30 @@ export const AdminUsersPage: React.FC = () => {
                 <div className="w-9 h-9 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center shadow-inner border border-rose-200 shrink-0">
                   <Trash2 className="w-5 h-5" />
                 </div>
-                <h3 className="font-extrabold text-slate-900 text-sm sm:text-base text-left">
+                <h3 className="font-extrabold text-slate-900 text-base text-left">
                   Xaqiijinta Tirtirka Maamulaha
                 </h3>
               </div>
 
-              {/* Note Details Box */}
-              <div className="bg-white/95 p-3.5 rounded-xl border border-slate-200 shadow-xs my-3 text-left grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
+              {/* Note Details Row (Unified on paper without nested box) */}
+              <div className="py-3 my-3 border-y border-dashed border-slate-200 flex flex-wrap items-center justify-around gap-3 text-xs bg-slate-50/50 rounded-xl">
                 <div>
-                  <span className="text-slate-400 font-bold uppercase text-[10px] block">Maamulaha:</span>
-                  <span className="font-extrabold text-slate-800 truncate block">{selectedAdmin.name}</span>
+                  <span className="text-slate-400 font-bold uppercase text-[10px] block">Maamulaha</span>
+                  <span className="font-extrabold text-slate-900 text-sm">{selectedAdmin.name}</span>
                 </div>
+                <div className="h-8 w-px bg-slate-200 hidden sm:block" />
                 <div>
-                  <span className="text-slate-400 font-bold uppercase text-[10px] block">Email:</span>
-                  <span className="font-mono text-slate-600 truncate block">{selectedAdmin.email}</span>
+                  <span className="text-slate-400 font-bold uppercase text-[10px] block">Email</span>
+                  <span className="font-mono text-slate-700 font-medium">{selectedAdmin.email}</span>
                 </div>
+                <div className="h-8 w-px bg-slate-200 hidden sm:block" />
                 <div>
-                  <span className="text-slate-400 font-bold uppercase text-[10px] block">Role-ka:</span>
-                  <span className="font-bold text-brand-navy block">{selectedAdmin.platformRole}</span>
+                  <span className="text-slate-400 font-bold uppercase text-[10px] block">Role-ka</span>
+                  <span className="font-bold text-brand-navy">{selectedAdmin.platformRole}</span>
                 </div>
               </div>
 
-              <p className="text-xs text-rose-600 font-semibold mb-4 text-left sm:text-center">
+              <p className="text-xs text-rose-600 font-semibold mb-4 text-center">
                 Tallaabadan dib looma noqon karo oo xogta maamulahan gebi ahaanba waa laga tirtirayaa platform-ka.
               </p>
 
@@ -1024,7 +1020,7 @@ export const AdminUsersPage: React.FC = () => {
                   type="button"
                   onClick={handleDelete}
                   disabled={actionLoading}
-                  className="px-5 py-2.5 bg-red-600 text-white rounded-xl font-bold text-xs hover:bg-red-700 transition-all shadow-md shadow-red-600/20 disabled:opacity-50"
+                  className="px-6 py-2.5 bg-red-600 text-white rounded-xl font-bold text-xs hover:bg-red-700 transition-all shadow-md shadow-red-600/20 disabled:opacity-50"
                 >
                   {actionLoading ? 'Waa la tirtirayaa...' : 'Haa, Tirtir'}
                 </button>
