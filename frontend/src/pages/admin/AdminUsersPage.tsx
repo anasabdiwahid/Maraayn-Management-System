@@ -752,12 +752,10 @@ export const AdminUsersPage: React.FC = () => {
 
             {/* Seamless Content Overlay calibrated directly onto the paper lines */}
             <div className="absolute inset-0">
-              {/* Top Row: Maraayn Branding & 'X' Close Button */}
-              <div className="absolute top-[20%] left-[8%] right-[8%] flex items-center justify-between">
-                <div className="flex items-center space-x-1.5 sm:space-x-2 max-w-[170px] sm:max-w-[210px]">
-                  <div className="bg-white/95 p-1 rounded-lg border border-slate-200/60 shadow-xs shrink-0">
-                    <img src="/logo.png" alt="Maraayn" className="h-5 sm:h-7 object-contain" />
-                  </div>
+              {/* Top Row: Maraayn Branding & 'X' Close Button (Safely inside paper top margin) */}
+              <div className="absolute top-[24%] left-[8%] right-[8%] flex items-center justify-between">
+                <div className="flex items-center space-x-2 max-w-[180px] sm:max-w-[220px]">
+                  <img src="/logo.png" alt="Maraayn" className="h-6 sm:h-7 object-contain shrink-0" />
                   <div className="min-w-0">
                     <div className="font-black text-[11px] sm:text-sm text-[#142746] leading-tight truncate">
                       Maraayn System
@@ -885,12 +883,10 @@ export const AdminUsersPage: React.FC = () => {
 
             {/* Seamless Content Overlay calibrated directly onto the paper lines */}
             <div className="absolute inset-0">
-              {/* Top Row: Maraayn Branding & 'X' Close Button */}
-              <div className="absolute top-[20%] left-[8%] right-[8%] flex items-center justify-between">
-                <div className="flex items-center space-x-1.5 sm:space-x-2 max-w-[170px] sm:max-w-[210px]">
-                  <div className="bg-white/95 p-1 rounded-lg border border-slate-200/60 shadow-xs shrink-0">
-                    <img src="/logo.png" alt="Maraayn" className="h-5 sm:h-7 object-contain" />
-                  </div>
+              {/* Top Row: Maraayn Branding & 'X' Close Button (Safely inside paper top margin) */}
+              <div className="absolute top-[24%] left-[8%] right-[8%] flex items-center justify-between">
+                <div className="flex items-center space-x-2 max-w-[180px] sm:max-w-[220px]">
+                  <img src="/logo.png" alt="Maraayn" className="h-6 sm:h-7 object-contain shrink-0" />
                   <div className="min-w-0">
                     <div className="font-black text-[11px] sm:text-sm text-[#142746] leading-tight truncate">
                       Maraayn System
