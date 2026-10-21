@@ -32,7 +32,7 @@ export const AdminLayout: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row font-sans">
+    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-slate-50 flex flex-col md:flex-row font-sans">
       {/* Mobile Top Header */}
       <div className="md:hidden bg-brand-navy text-white px-4 py-3 flex items-center justify-between shadow-md z-30">
         <div className="flex items-center space-x-3">
@@ -49,9 +49,17 @@ export const AdminLayout: React.FC = () => {
         </button>
       </div>
 
+      {/* Mobile Backdrop Overlay */}
+      {sidebarOpen && (
+        <div
+          onClick={() => setSidebarOpen(false)}
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-30 md:hidden transition-opacity"
+        />
+      )}
+
       {/* Admin Sidebar */}
       <aside
-        className={`fixed md:sticky top-0 h-[100dvh] w-64 bg-brand-navy text-slate-300 flex flex-col z-40 transition-transform duration-300 ease-in-out ${
+        className={`fixed md:sticky top-0 h-[100dvh] w-64 shrink-0 bg-brand-navy text-slate-300 flex flex-col z-40 transition-transform duration-300 ease-in-out ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         }`}
       >
@@ -114,7 +122,7 @@ export const AdminLayout: React.FC = () => {
       </aside>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-y-auto min-h-screen">
+      <div className="flex-1 flex flex-col min-w-0 w-full overflow-x-hidden overflow-y-auto min-h-screen">
         {/* Top Navbar */}
         <header className="hidden md:flex bg-white border-b border-slate-200 px-8 py-3.5 items-center justify-between sticky top-0 z-20 shadow-sm">
           <div>
@@ -133,7 +141,7 @@ export const AdminLayout: React.FC = () => {
         </header>
 
         {/* Page Content Outlet */}
-        <main className="flex-1 p-4 md:p-8">
+        <main className="flex-1 w-full min-w-0 p-4 md:p-8">
           <Outlet />
         </main>
       </div>

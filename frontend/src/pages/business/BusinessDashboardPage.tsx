@@ -147,9 +147,9 @@ export const BusinessDashboardPage: React.FC = () => {
       </div>
 
       {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full min-w-0">
         {/* Sales & Revenue Trend (2 cols) */}
-        <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+        <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200 p-6 shadow-sm min-w-0 overflow-hidden">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="text-sm font-bold text-slate-800">Revenue vs Expenses</h3>
@@ -158,7 +158,7 @@ export const BusinessDashboardPage: React.FC = () => {
             <TrendingUp className="w-4 h-4 text-brand-amber" />
           </div>
 
-          <div className="h-64">
+          <div className="h-64 w-full min-w-0 overflow-hidden">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={charts?.salesTrend || []}>
                 <defs>
@@ -186,7 +186,7 @@ export const BusinessDashboardPage: React.FC = () => {
         </div>
 
         {/* Sales by Payment Method (1 col) */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm flex flex-col justify-between">
+        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm flex flex-col justify-between min-w-0 overflow-hidden">
           <div>
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-bold text-slate-800">Payment Methods</h3>
@@ -194,7 +194,7 @@ export const BusinessDashboardPage: React.FC = () => {
             </div>
             <p className="text-xs text-slate-400 mb-4">Cash vs Mobile Money vs Bank</p>
 
-            <div className="h-44">
+            <div className="h-44 w-full min-w-0 overflow-hidden">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie

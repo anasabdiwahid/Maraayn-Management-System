@@ -64,7 +64,7 @@ export const AdminDashboardPage: React.FC = () => {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 w-full min-w-0 max-w-full overflow-hidden">
       {/* Page Title & Quick Actions */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -120,9 +120,9 @@ export const AdminDashboardPage: React.FC = () => {
       </div>
 
       {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full min-w-0">
         {/* Market Registration Growth */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm min-w-0 overflow-hidden">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="text-sm font-bold text-slate-800">Registration Growth Trend</h3>
@@ -131,7 +131,7 @@ export const AdminDashboardPage: React.FC = () => {
             <TrendingUp className="w-4 h-4 text-brand-amber" />
           </div>
 
-          <div className="h-64">
+          <div className="h-64 w-full min-w-0 overflow-hidden">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={stats?.monthlyGrowth || []}>
                 <defs>
@@ -160,7 +160,7 @@ export const AdminDashboardPage: React.FC = () => {
         </div>
 
         {/* Business Category Distribution */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm min-w-0 overflow-hidden">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="text-sm font-bold text-slate-800">Business Categories</h3>
@@ -169,7 +169,7 @@ export const AdminDashboardPage: React.FC = () => {
             <Store className="w-4 h-4 text-brand-navy" />
           </div>
 
-          <div className="h-64">
+          <div className="h-64 w-full min-w-0 overflow-hidden">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={stats?.categoryDistribution || []}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
@@ -186,9 +186,9 @@ export const AdminDashboardPage: React.FC = () => {
       </div>
 
       {/* Two Column Lists: Recently Registered Markets & Audit Trail */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full min-w-0">
         {/* Recent Markets */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm min-w-0 overflow-hidden">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center space-x-2">
               <h3 className="text-sm font-bold text-slate-800">Recent Markets</h3>
@@ -277,7 +277,7 @@ export const AdminDashboardPage: React.FC = () => {
         </div>
 
         {/* Administrative Audit Logs */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm min-w-0 overflow-hidden">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-bold text-slate-800">Administrative Activity Trail</h3>
             <Clock className="w-4 h-4 text-slate-400" />
