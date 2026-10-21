@@ -750,11 +750,10 @@ export const AdminUsersPage: React.FC = () => {
               className="w-full h-auto drop-shadow-2xl select-none block pointer-events-none"
             />
 
-            {/* Seamless Content Overlay mapped directly on the paper */}
-            <div className="absolute inset-0 pt-[21%] pb-[6%] px-[7%] sm:px-[8%] flex flex-col justify-between">
+            {/* Seamless Content Overlay calibrated directly onto the paper lines */}
+            <div className="absolute inset-0">
               {/* Top Row: Maraayn Branding & 'X' Close Button */}
-              <div className="flex items-center justify-between">
-                {/* Left: Maraayn Logo & Subtitle */}
+              <div className="absolute top-[20%] left-[8%] right-[8%] flex items-center justify-between">
                 <div className="flex items-center space-x-1.5 sm:space-x-2 max-w-[170px] sm:max-w-[210px]">
                   <div className="bg-white/95 p-1 rounded-lg border border-slate-200/60 shadow-xs shrink-0">
                     <img src="/logo.png" alt="Maraayn" className="h-5 sm:h-7 object-contain" />
@@ -763,7 +762,7 @@ export const AdminUsersPage: React.FC = () => {
                     <div className="font-black text-[11px] sm:text-sm text-[#142746] leading-tight truncate">
                       Maraayn System
                     </div>
-                    <div className="text-[8px] sm:text-[9px] text-amber-600 font-extrabold uppercase tracking-wider">
+                    <div className="text-[8px] sm:text-[9px] text-brand-amber font-extrabold uppercase tracking-wider">
                       {statusTargetAdmin.status === 'ACTIVE'
                         ? 'Ogeysiis Xanibaad'
                         : 'Ogeysiis Furitaan'}
@@ -771,7 +770,6 @@ export const AdminUsersPage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Right: 'X' Close Button */}
                 <button
                   type="button"
                   onClick={() => {
@@ -785,14 +783,13 @@ export const AdminUsersPage: React.FC = () => {
                 </button>
               </div>
 
-              {/* Main Body Notice (Positioned clearly on the lined paper) */}
-              <div className="my-auto py-0.5 sm:py-1 px-1 sm:px-2 text-center">
-                {/* Action Title Badge */}
+              {/* Line Row 1: Status Title Badge centered between lines */}
+              <div className="absolute top-[33.5%] left-[8%] right-[8%] h-[9.8%] flex items-center justify-center">
                 <div
-                  className={`inline-flex items-center space-x-1.5 sm:space-x-2 px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full mb-1 shadow-xs border ${
+                  className={`inline-flex items-center space-x-1.5 px-3 py-1 rounded-full font-extrabold text-[11px] sm:text-xs md:text-sm shadow-xs backdrop-blur-xs border ${
                     statusTargetAdmin.status === 'ACTIVE'
-                      ? 'bg-amber-500/10 border-amber-500/20 text-amber-700'
-                      : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-700'
+                      ? 'bg-amber-500/15 border-amber-500/30 text-amber-800'
+                      : 'bg-emerald-500/15 border-emerald-500/30 text-emerald-800'
                   }`}
                 >
                   {statusTargetAdmin.status === 'ACTIVE' ? (
@@ -800,43 +797,56 @@ export const AdminUsersPage: React.FC = () => {
                   ) : (
                     <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
                   )}
-                  <span className="font-extrabold text-[11px] sm:text-xs md:text-sm">
+                  <span>
                     {statusTargetAdmin.status === 'ACTIVE'
                       ? 'Xaqiijinta Xanibaadda Maamulaha'
                       : 'Xaqiijinta Furitaanka Maamulaha'}
                   </span>
                 </div>
+              </div>
 
-                {/* Admin Details Row */}
-                <div className="flex items-center justify-center space-x-2 sm:space-x-3 text-[10px] sm:text-xs text-slate-700 my-0.5 sm:my-1 font-medium">
+              {/* Line Row 2: Admin Info resting directly on line 2 */}
+              <div className="absolute top-[43.8%] left-[8%] right-[8%] h-[9.4%] flex items-end justify-center pb-0.5">
+                <div className="flex items-center space-x-2 sm:space-x-3 text-[10px] sm:text-xs text-slate-800 font-semibold leading-none">
                   <span>
-                    Maamule: <strong className="text-slate-900 font-bold">{statusTargetAdmin.name}</strong>
+                    Maamule: <strong className="text-slate-950 font-black">{statusTargetAdmin.name}</strong>
                   </span>
-                  <span className="text-slate-300">•</span>
-                  <span className="font-mono text-slate-600 truncate max-w-[120px] sm:max-w-none">
+                  <span className="text-slate-400">•</span>
+                  <span className="font-mono text-slate-700 font-medium truncate max-w-[120px] sm:max-w-none">
                     {statusTargetAdmin.email}
                   </span>
-                  <span className="text-slate-300">•</span>
+                  <span className="text-slate-400">•</span>
                   <span className="font-bold text-[#142746]">{statusTargetAdmin.platformRole}</span>
                 </div>
+              </div>
 
-                {/* Notice text */}
-                <p className="text-[10px] sm:text-xs text-slate-600 max-w-md mx-auto leading-relaxed mt-0.5 sm:mt-1">
+              {/* Line Row 3: Question text resting directly on line 3 */}
+              <div className="absolute top-[53.2%] left-[8%] right-[8%] h-[9.4%] flex items-end justify-center pb-0.5">
+                <p className="text-[11px] sm:text-xs font-bold text-slate-800 text-center leading-none">
                   {statusTargetAdmin.status === 'ACTIVE'
-                    ? 'Ma hubtaa inaad xanibto maamulahan? Ma awoodi doono inuu nidaamka soo galo ilaa dib loo furo.'
-                    : 'Ma hubtaa inaad dib u furto maamulahan? Wuxuu si toos ah u awoodi doonaa inuu nidaamka galo.'}
+                    ? 'Ma hubtaa inaad xanibto maamulahan?'
+                    : 'Ma hubtaa inaad dib u furto maamulahan?'}
                 </p>
               </div>
 
-              {/* Bottom Action Buttons Row */}
-              <div className="flex items-center justify-end space-x-2 sm:space-x-2.5 pt-1 sm:pt-1.5 border-t border-slate-200/80">
+              {/* Line Row 4: Consequence warning resting directly on line 4 */}
+              <div className="absolute top-[62.6%] left-[8%] right-[8%] h-[9.4%] flex items-end justify-center pb-0.5">
+                <p className="text-[10px] sm:text-[11px] text-slate-600 font-medium text-center leading-none">
+                  {statusTargetAdmin.status === 'ACTIVE'
+                    ? 'Ma awoodi doono inuu nidaamka soo galo ilaa dib loo furo.'
+                    : 'Wuxuu si toos ah u awoodi doonaa inuu nidaamka galo.'}
+                </p>
+              </div>
+
+              {/* Line Row 5 & 6: Action buttons resting in the bottom section */}
+              <div className="absolute bottom-[8%] right-[8%] flex items-center space-x-2.5">
                 <button
                   type="button"
                   onClick={() => {
                     setStatusModalOpen(false);
                     setStatusTargetAdmin(null);
                   }}
-                  className="px-3 sm:px-5 py-1 sm:py-2 border border-slate-300/90 rounded-xl font-bold text-[10px] sm:text-xs text-slate-600 hover:bg-slate-100/80 transition-colors shadow-xs bg-white/70"
+                  className="px-3 sm:px-5 py-1.5 sm:py-2 border border-slate-300 rounded-xl font-bold text-[10px] sm:text-xs text-slate-600 hover:bg-slate-100 transition-colors shadow-xs bg-white/90"
                 >
                   Ka Noqo
                 </button>
@@ -844,7 +854,7 @@ export const AdminUsersPage: React.FC = () => {
                   type="button"
                   onClick={handleToggle}
                   disabled={actionLoading}
-                  className={`px-4 sm:px-6 py-1 sm:py-2 text-white rounded-xl font-bold text-[10px] sm:text-xs transition-all shadow-md disabled:opacity-50 ${
+                  className={`px-4 sm:px-6 py-1.5 sm:py-2 text-white rounded-xl font-bold text-[10px] sm:text-xs transition-all shadow-md disabled:opacity-50 ${
                     statusTargetAdmin.status === 'ACTIVE'
                       ? 'bg-amber-600 hover:bg-amber-700 shadow-amber-600/30'
                       : 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/30'
@@ -873,11 +883,10 @@ export const AdminUsersPage: React.FC = () => {
               className="w-full h-auto drop-shadow-2xl select-none block pointer-events-none"
             />
 
-            {/* Seamless Content Overlay mapped directly on the paper */}
-            <div className="absolute inset-0 pt-[21%] pb-[6%] px-[7%] sm:px-[8%] flex flex-col justify-between">
+            {/* Seamless Content Overlay calibrated directly onto the paper lines */}
+            <div className="absolute inset-0">
               {/* Top Row: Maraayn Branding & 'X' Close Button */}
-              <div className="flex items-center justify-between">
-                {/* Left: Maraayn Logo & Subtitle */}
+              <div className="absolute top-[20%] left-[8%] right-[8%] flex items-center justify-between">
                 <div className="flex items-center space-x-1.5 sm:space-x-2 max-w-[170px] sm:max-w-[210px]">
                   <div className="bg-white/95 p-1 rounded-lg border border-slate-200/60 shadow-xs shrink-0">
                     <img src="/logo.png" alt="Maraayn" className="h-5 sm:h-7 object-contain" />
@@ -892,7 +901,6 @@ export const AdminUsersPage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Right: 'X' Close Button */}
                 <button
                   type="button"
                   onClick={() => {
@@ -906,44 +914,52 @@ export const AdminUsersPage: React.FC = () => {
                 </button>
               </div>
 
-              {/* Main Body Notice */}
-              <div className="my-auto py-0.5 sm:py-1 px-1 sm:px-2 text-center">
-                {/* Action Title Badge */}
-                <div className="inline-flex items-center space-x-1.5 sm:space-x-2 px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full mb-1 shadow-xs border bg-rose-500/10 border-rose-500/20 text-rose-700">
+              {/* Line Row 1: Status Title Badge centered between lines */}
+              <div className="absolute top-[33.5%] left-[8%] right-[8%] h-[9.8%] flex items-center justify-center">
+                <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full font-extrabold text-[11px] sm:text-xs md:text-sm shadow-xs backdrop-blur-xs border bg-rose-500/15 border-rose-500/30 text-rose-800">
                   <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
-                  <span className="font-extrabold text-[11px] sm:text-xs md:text-sm">
-                    Xaqiijinta Tirtirka Maamulaha
-                  </span>
+                  <span>Xaqiijinta Tirtirka Maamulaha</span>
                 </div>
+              </div>
 
-                {/* Admin Details Row */}
-                <div className="flex items-center justify-center space-x-2 sm:space-x-3 text-[10px] sm:text-xs text-slate-700 my-0.5 sm:my-1 font-medium">
+              {/* Line Row 2: Admin Info resting directly on line 2 */}
+              <div className="absolute top-[43.8%] left-[8%] right-[8%] h-[9.4%] flex items-end justify-center pb-0.5">
+                <div className="flex items-center space-x-2 sm:space-x-3 text-[10px] sm:text-xs text-slate-800 font-semibold leading-none">
                   <span>
-                    Maamule: <strong className="text-slate-900 font-bold">{selectedAdmin.name}</strong>
+                    Maamule: <strong className="text-slate-950 font-black">{selectedAdmin.name}</strong>
                   </span>
-                  <span className="text-slate-300">•</span>
-                  <span className="font-mono text-slate-600 truncate max-w-[120px] sm:max-w-none">
+                  <span className="text-slate-400">•</span>
+                  <span className="font-mono text-slate-700 font-medium truncate max-w-[120px] sm:max-w-none">
                     {selectedAdmin.email}
                   </span>
-                  <span className="text-slate-300">•</span>
+                  <span className="text-slate-400">•</span>
                   <span className="font-bold text-[#142746]">{selectedAdmin.platformRole}</span>
                 </div>
+              </div>
 
-                {/* Notice text */}
-                <p className="text-[10px] sm:text-xs text-rose-600 font-bold max-w-md mx-auto leading-relaxed mt-0.5 sm:mt-1">
-                  Tallaabadan dib looma noqon karo oo xogta maamulahan gebi ahaanba waa laga tirtirayaa platform-ka.
+              {/* Line Row 3: Main Warning text resting directly on line 3 */}
+              <div className="absolute top-[53.2%] left-[8%] right-[8%] h-[9.4%] flex items-end justify-center pb-0.5">
+                <p className="text-[11px] sm:text-xs font-bold text-rose-700 text-center leading-none">
+                  Ma hubtaa inaad gabi ahaanba tirtirto maamulahan?
                 </p>
               </div>
 
-              {/* Bottom Action Buttons Row */}
-              <div className="flex items-center justify-end space-x-2 sm:space-x-2.5 pt-1 sm:pt-1.5 border-t border-slate-200/80">
+              {/* Line Row 4: Consequence warning resting directly on line 4 */}
+              <div className="absolute top-[62.6%] left-[8%] right-[8%] h-[9.4%] flex items-end justify-center pb-0.5">
+                <p className="text-[10px] sm:text-[11px] text-slate-600 font-medium text-center leading-none">
+                  Tallaabadan dib looma noqon karo oo xogta gebi ahaanba waa laga saarayaa.
+                </p>
+              </div>
+
+              {/* Line Row 5 & 6: Action buttons resting in the bottom section */}
+              <div className="absolute bottom-[8%] right-[8%] flex items-center space-x-2.5">
                 <button
                   type="button"
                   onClick={() => {
                     setDeleteModalOpen(false);
                     setSelectedAdmin(null);
                   }}
-                  className="px-3 sm:px-5 py-1 sm:py-2 border border-slate-300/90 rounded-xl font-bold text-[10px] sm:text-xs text-slate-600 hover:bg-slate-100/80 transition-colors shadow-xs bg-white/70"
+                  className="px-3 sm:px-5 py-1.5 sm:py-2 border border-slate-300 rounded-xl font-bold text-[10px] sm:text-xs text-slate-600 hover:bg-slate-100 transition-colors shadow-xs bg-white/90"
                 >
                   Ka Noqo
                 </button>
@@ -951,7 +967,7 @@ export const AdminUsersPage: React.FC = () => {
                   type="button"
                   onClick={handleDelete}
                   disabled={actionLoading}
-                  className="px-4 sm:px-6 py-1 sm:py-2 text-white rounded-xl font-bold text-[10px] sm:text-xs bg-rose-600 hover:bg-rose-700 transition-all shadow-md shadow-rose-600/30 disabled:opacity-50"
+                  className="px-4 sm:px-6 py-1.5 sm:py-2 text-white rounded-xl font-bold text-[10px] sm:text-xs bg-rose-600 hover:bg-rose-700 transition-all shadow-md shadow-rose-600/30 disabled:opacity-50"
                 >
                   {actionLoading ? 'Waa la tirtirayaa...' : 'Haa, Tirtir (Delete)'}
                 </button>
