@@ -9,6 +9,8 @@ import {
   X,
   CheckCircle,
   TrendingUp,
+  TrendingDown,
+  Minus,
 } from 'lucide-react';
 import api from '../../api/client.js';
 import { useAuth } from '../../context/AuthContext.js';
@@ -330,33 +332,70 @@ export const ProductsPage: React.FC = () => {
                 />
               </div>
 
-              <div>
-                <label className="block font-bold text-slate-700 mb-1.5 text-xs">
-                  Price ({currency}) *
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3.5 top-3 text-slate-400 font-bold text-sm">
-                    {currency}
+              {/* Product Cost & Selling Price Side by Side */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* Cost Price */}
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1.5 text-xs">
+                    Lacagta aad ku soo iibsatay (Cost) *
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3.5 top-3 text-slate-400 font-bold text-sm">
+                      {currency}
+                    </span>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      required
+                      value={formData.purchaseCost === 0 ? '' : formData.purchaseCost}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          purchaseCost: Number(e.target.value),
+                        })
+                      }
+                      placeholder="0.00"
+                      className="w-full pl-8 pr-3 py-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#142746] focus:bg-white text-sm"
+                    />
+                  </div>
+                  <span className="text-[10px] text-slate-400 mt-1 block">
+                    Tusaale: $0.70 (Qiimaha aad ka soo iibsatay)
                   </span>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    required
-                    value={formData.sellingPrice || ''}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        sellingPrice: Number(e.target.value),
-                        purchaseCost: formData.purchaseCost || Number(e.target.value),
-                      })
-                    }
-                    placeholder="0.00"
-                    className="w-full pl-8 pr-3 py-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#142746] focus:bg-white text-sm"
-                  />
+                </div>
+
+                {/* Selling Price */}
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1.5 text-xs">
+                    Inta aad ku iibinayso (Price) *
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3.5 top-3 text-slate-400 font-bold text-sm">
+                      {currency}
+                    </span>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      required
+                      value={formData.sellingPrice === 0 ? '' : formData.sellingPrice}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          sellingPrice: Number(e.target.value),
+                        })
+                      }
+                      placeholder="0.00"
+                      className="w-full pl-8 pr-3 py-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#142746] focus:bg-white text-sm"
+                    />
+                  </div>
+                  <span className="text-[10px] text-slate-400 mt-1 block">
+                    Tusaale: $1.00 (Qiimaha aad ka iibinayso)
+                  </span>
                 </div>
               </div>
 
+              {/* Quantity in Stock */}
               <div>
                 <label className="block font-bold text-slate-700 mb-1.5 text-xs">
                   Quantity in Stock (Inta Xabo ee Taalla) *
@@ -376,6 +415,68 @@ export const ProductsPage: React.FC = () => {
                   Tirada xabbadood ee hadda kugu jira bakhaarka ama dukaanka
                 </span>
               </div>
+
+              {/* Live Profit / Margin Preview Box (Kahor Inta Aan La Save-gareyn) */}
+              {(() => {
+                const cost = Number(formData.purchaseCost) || 0;
+                const sell = Number(formData.sellingPrice) || 0;
+                const qty = Number(formData.currentQuantity) || 0;
+                const profitPerUnit = sell - cost;
+                const totalProfit = profitPerUnit * qty;
+                const margin = cost > 0 ? ((profitPerUnit / cost) * 100).toFixed(1) : (sell > 0 ? '100' : '0');
+
+                if (cost > 0 && sell > cost) {
+                  return (
+                    <div className="p-3 bg-emerald-50 border border-emerald-300 rounded-xl text-emerald-950 space-y-1.5 animate-fadeIn shadow-2xs">
+                      <div className="flex items-center justify-between font-bold text-xs">
+                        <span className="flex items-center space-x-1.5 text-emerald-700">
+                          <TrendingUp className="w-4 h-4 text-emerald-600 shrink-0" />
+                          <span>Faa'iidada Xabbad Kasta:</span>
+                        </span>
+                        <span className="text-sm font-black text-emerald-700">
+                          +{currency}{profitPerUnit.toFixed(2)} (+{margin}%)
+                        </span>
+                      </div>
+                      {qty > 0 && (
+                        <div className="flex items-center justify-between text-[11px] text-emerald-800 pt-1.5 border-t border-emerald-200">
+                          <span>Wadarta Faa'iidada Kaydka ({qty} xabo):</span>
+                          <span className="font-black text-emerald-900 text-xs">
+                            +{currency}{totalProfit.toFixed(2)}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                } else if (cost > 0 && sell > 0 && sell === cost) {
+                  return (
+                    <div className="p-3 bg-blue-50 border border-blue-300 rounded-xl text-blue-900 flex items-center justify-between text-xs font-semibold animate-fadeIn shadow-2xs">
+                      <span className="flex items-center space-x-1.5 text-blue-700">
+                        <Minus className="w-4 h-4 text-blue-600 shrink-0" />
+                        <span>Isla Qiimihii Lagu Soo Iibsaday (Breakeven):</span>
+                      </span>
+                      <span className="font-black text-blue-800">{currency}0.00 (Faa'iido Ma Jirto)</span>
+                    </div>
+                  );
+                } else if (cost > 0 && sell > 0 && sell < cost) {
+                  return (
+                    <div className="p-3 bg-rose-50 border border-rose-300 rounded-xl text-rose-950 space-y-1 animate-fadeIn shadow-2xs">
+                      <div className="flex items-center justify-between font-bold text-xs text-rose-700">
+                        <span className="flex items-center space-x-1.5">
+                          <TrendingDown className="w-4 h-4 text-rose-600 shrink-0" />
+                          <span>Digniin Qasaaro (Loss):</span>
+                        </span>
+                        <span className="text-sm font-black text-rose-700">
+                          -{currency}{Math.abs(profitPerUnit).toFixed(2)}
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-rose-600">
+                        Qiimaha aad ku iibinayso ({currency}{sell.toFixed(2)}) wuxuu ka yar yahay intaad ku soo iibsatay ({currency}{cost.toFixed(2)}).
+                      </p>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
 
               <div className="mt-6 flex justify-end space-x-2 pt-3 border-t border-slate-100">
                 <button

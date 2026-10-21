@@ -13,6 +13,8 @@ import {
   Receipt,
   CheckCircle,
   Clock,
+  TrendingDown,
+  Minus,
 } from 'lucide-react';
 import {
   AreaChart,
@@ -144,6 +146,97 @@ export const BusinessDashboardPage: React.FC = () => {
           icon={Users}
           color="blue"
         />
+      </div>
+
+      {/* Profit & Loss Classification (User Request: Alaabta Faa'iidada, Isla Qiimahooda, iyo Qasaarada) */}
+      <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 mb-4 border-b border-slate-100 gap-2">
+          <div>
+            <h2 className="text-base font-extrabold text-[#142746] flex items-center gap-2">
+              <span>Falanqaynta Iibka & Faa'iidada (Sales & Profit Classification)</span>
+            </h2>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Kala saarka alaabta faa'iidada leh, kuwa isla qiimihii lagu iibiyay, iyo kuwa qasaarada ku baxay
+            </p>
+          </div>
+          <span className="text-[11px] font-semibold text-slate-500 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-200 self-start sm:self-auto">
+            Waqtiga: {period === 'today' ? 'Maanta' : period === '7days' ? '7-dii Maalmood ee u dambeeyay' : period === 'month' ? 'Bishan' : 'Sannadkan'}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* 1. Alaabta Faa'iidada laga helay */}
+          <div className="relative overflow-hidden bg-gradient-to-br from-emerald-50/70 to-emerald-100/30 rounded-xl border border-emerald-200 p-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-bold text-emerald-900 uppercase tracking-wider flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                Alaabta Faa'iidada Leh
+              </span>
+              <div className="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center shadow-sm">
+                <TrendingUp className="w-4 h-4 stroke-[2.5]" />
+              </div>
+            </div>
+            <div className="text-2xl font-black text-emerald-700 tracking-tight">
+              +{currency}{stats?.profitClassification?.profitable?.totalProfit?.toLocaleString() ?? 0}
+            </div>
+            <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-emerald-200/60 text-xs">
+              <span className="text-emerald-800 font-medium">
+                Alaab la iibiyay: <strong className="font-bold text-emerald-950">{stats?.profitClassification?.profitable?.itemsCount || 0} xabo</strong>
+              </span>
+              <span className="text-[11px] font-bold text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded-md">
+                {stats?.profitClassification?.profitable?.salesCount || 0} Iib
+              </span>
+            </div>
+          </div>
+
+          {/* 2. Alaabta Isla Qiimahooda lagu iibiyay (Breakeven) */}
+          <div className="relative overflow-hidden bg-gradient-to-br from-blue-50/70 to-sky-100/30 rounded-xl border border-blue-200 p-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-bold text-blue-900 uppercase tracking-wider flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                Isla Qiimihii Lagu Soo Gatay
+              </span>
+              <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center shadow-sm">
+                <Minus className="w-4 h-4 stroke-[3]" />
+              </div>
+            </div>
+            <div className="text-2xl font-black text-blue-800 tracking-tight">
+              {currency}{stats?.profitClassification?.breakeven?.totalRevenue?.toLocaleString() ?? 0}
+            </div>
+            <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-blue-200/60 text-xs">
+              <span className="text-blue-800 font-medium">
+                Alaab la iibiyay: <strong className="font-bold text-blue-950">{stats?.profitClassification?.breakeven?.itemsCount || 0} xabo</strong>
+              </span>
+              <span className="text-[11px] font-bold text-blue-700 bg-blue-100/80 px-2 py-0.5 rounded-md">
+                Breakeven ($0 Faa'iido)
+              </span>
+            </div>
+          </div>
+
+          {/* 3. Alaabta Qasaarada laga helay (Loss) */}
+          <div className="relative overflow-hidden bg-gradient-to-br from-rose-50/70 to-red-100/30 rounded-xl border border-rose-200 p-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-bold text-rose-900 uppercase tracking-wider flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-rose-500"></span>
+                Alaabta Qasaarada Ku Baxday
+              </span>
+              <div className="w-8 h-8 rounded-lg bg-rose-600 text-white flex items-center justify-center shadow-sm">
+                <TrendingDown className="w-4 h-4 stroke-[2.5]" />
+              </div>
+            </div>
+            <div className="text-2xl font-black text-rose-700 tracking-tight">
+              -{currency}{stats?.profitClassification?.loss?.totalLoss?.toLocaleString() ?? 0}
+            </div>
+            <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-rose-200/60 text-xs">
+              <span className="text-rose-800 font-medium">
+                Alaab la iibiyay: <strong className="font-bold text-rose-950">{stats?.profitClassification?.loss?.itemsCount || 0} xabo</strong>
+              </span>
+              <span className="text-[11px] font-bold text-rose-700 bg-rose-100/80 px-2 py-0.5 rounded-md">
+                {stats?.profitClassification?.loss?.salesCount || 0} Iib
+              </span>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Charts Section */}

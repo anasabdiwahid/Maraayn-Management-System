@@ -49,6 +49,8 @@ export const NewSalePage: React.FC = () => {
   const [receiptModalOpen, setReceiptModalOpen] = useState(false);
   const [generatedReceipt, setGeneratedReceipt] = useState<any>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [inlineError, setInlineError] = useState<string | null>(null);
+  const [inlineSuccess, setInlineSuccess] = useState<string | null>(null);
 
   const currency = tenant?.currencySymbol || '$';
 
@@ -160,29 +162,35 @@ export const NewSalePage: React.FC = () => {
       setCustomerName(cus.name);
       setCustomerPhone(cus.phone);
     } else {
-      setCustomerName('Walk-in Customer');
+      setCustomerName(saleType === 'CREDIT_SALE' ? '' : 'Walk-in Customer');
       setCustomerPhone('');
     }
   };
 
   const handleCompleteSale = async () => {
+    setInlineError(null);
+    setInlineSuccess(null);
+
     if (cart.length === 0) {
-      alert('Please add at least one product to the cart!');
+      setInlineError('Fadlan ku dar ugu yaraan hal badeeco cart-ka!');
       return;
     }
 
-    if (saleType === 'CREDIT_SALE' && !selectedCustomer) {
-      alert('Credit sales require a registered customer. Please select a customer.');
+    const trimmedName = customerName === 'Walk-in Customer' && saleType === 'CREDIT_SALE' ? '' : customerName.trim();
+    if (saleType === 'CREDIT_SALE' && !selectedCustomer && !trimmedName && !customerPhone.trim()) {
+      setInlineError('Daynta waa in lagu qoraa magaca qofka ama taleefankiisa.');
       return;
     }
 
     setSubmitting(true);
     try {
+      const finalCustomerName = trimmedName || (selectedCustomer ? customers.find((c) => c._id === selectedCustomer)?.name : '') || 'Macmiil Dayn';
+
       const payload = {
         saleType,
         customerId: selectedCustomer || undefined,
-        customerName,
-        customerPhone,
+        customerName: finalCustomerName,
+        customerPhone: customerPhone.trim(),
         paymentMethod,
         items: cart.map((i) => ({
           productId: i.product._id,
@@ -208,19 +216,23 @@ export const NewSalePage: React.FC = () => {
         origin: { y: 0.7 },
       });
 
+      if (res.data.consolidated) {
+        setInlineSuccess(`Iibkan cusub waxaa si toos ah loogu kordhiyay recite-kii hore ee #${res.data.sale.receiptNumber}.`);
+      }
+
       // Prepare receipt preview modal
       setGeneratedReceipt({
         receiptNumber: res.data.sale.receiptNumber,
         receiptType: saleType,
-        customerName,
-        customerPhone,
+        customerName: res.data.sale.customerName || finalCustomerName,
+        customerPhone: res.data.sale.customerPhone || customerPhone,
         items: res.data.sale.items,
         grandTotal: res.data.sale.grandTotal,
         amountPaid: res.data.sale.amountPaid,
         balanceRemaining: res.data.sale.balanceDue,
         paymentMethod,
-        notes: saleNotes,
-        createdAt: new Date().toISOString(),
+        notes: res.data.sale.notes || saleNotes,
+        createdAt: res.data.sale.createdAt || new Date().toISOString(),
       });
 
       setReceiptModalOpen(true);
@@ -229,16 +241,18 @@ export const NewSalePage: React.FC = () => {
       setCart([]);
       setAmountPaid(0);
       setSaleNotes('');
+      setDueDate('');
       if (saleType === 'CREDIT_SALE') {
         setSelectedCustomer('');
         setCustomerName('Walk-in Customer');
         setCustomerPhone('');
       }
 
-      // Refresh product quantities
+      // Refresh product quantities and customers
       api.get('/products', { params: { limit: 100 } }).then((r) => setProducts(r.data.data || []));
+      api.get('/customers', { params: { limit: 100 } }).then((r) => setCustomers(r.data.data || []));
     } catch (err: any) {
-      alert(err.response?.data?.message || 'An error occurred while processing the sale');
+      setInlineError(err.response?.data?.message || 'Khalad ayaa dhacay inta lagu guda jiray diiwaangelinta iibka');
     } finally {
       setSubmitting(false);
     }
@@ -433,34 +447,78 @@ export const NewSalePage: React.FC = () => {
             </div>
           </div>
 
-          {/* Customer Selector (Mandatory for Credit, Optional for Cash) */}
+          {/* Customer Selection & Direct Name/Phone Input */}
           <div className="space-y-2 text-xs">
-            <div className="flex items-center justify-between">
-              <label className="font-bold text-slate-700">
-                Customer {saleType === 'CREDIT_SALE' && <span className="text-rose-500">* (Required)</span>}
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">
+                Customer {saleType === 'CREDIT_SALE' && <span className="text-rose-500">* (Magaca Macmiilka)</span>}
               </label>
+              <select
+                value={selectedCustomer}
+                onChange={(e) => handleCustomerChange(e.target.value)}
+                className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-amber text-xs"
+              >
+                <option value="">-- Dooro Macmiil Diwaangashan (Ama toos u qor hoos) --</option>
+                {customers.map((c) => (
+                  <option key={c._id} value={c._id}>
+                    {c.name} ({c.phone || 'No phone'}) {c.currentDebtBalance > 0 ? `— Dayn Hore: ${currency}${c.currentDebtBalance}` : ''}
+                  </option>
+                ))}
+              </select>
             </div>
 
-            <select
-              value={selectedCustomer}
-              onChange={(e) => handleCustomerChange(e.target.value)}
-              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-amber"
-            >
-              <option value="">-- Select Registered Customer --</option>
-              {customers.map((c) => (
-                <option key={c._id} value={c._id}>
-                  {c.name} ({c.phone}) - Debt: {currency}{c.currentDebtBalance}
-                </option>
-              ))}
-            </select>
+            {/* Direct Inputs for Name & Phone (Especially for Credit Sales) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div>
+                <label className="block text-[11px] font-bold text-slate-600 mb-0.5">
+                  Magaca Macmiilka {saleType === 'CREDIT_SALE' && <span className="text-rose-500">*</span>}
+                </label>
+                <input
+                  type="text"
+                  placeholder="Geli magaca macmiilka..."
+                  value={customerName === 'Walk-in Customer' && saleType === 'CREDIT_SALE' ? '' : customerName}
+                  onChange={(e) => {
+                    setCustomerName(e.target.value);
+                    if (selectedCustomer) setSelectedCustomer('');
+                  }}
+                  className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-brand-amber"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-600 mb-0.5">
+                  Taleefanka (Phone)
+                </label>
+                <input
+                  type="text"
+                  placeholder="Tusaale: 061XXXXXXX"
+                  value={customerPhone}
+                  onChange={(e) => setCustomerPhone(e.target.value)}
+                  className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs font-mono focus:outline-none focus:ring-2 focus:ring-brand-amber"
+                />
+              </div>
+            </div>
+
+            {/* Existing Debt Info Alert if Selected Customer Has Previous Debt */}
+            {saleType === 'CREDIT_SALE' && selectedCustomer && (() => {
+              const cus = customers.find((c) => c._id === selectedCustomer);
+              if (cus && cus.currentDebtBalance > 0) {
+                return (
+                  <div className="p-2 bg-amber-50 border border-amber-300 rounded-lg text-amber-900 text-[11px] font-medium leading-tight">
+                    ℹ Macmiilkani wuxuu leeyahay dayn hore oo ah <strong>{currency}{cus.currentDebtBalance}</strong>. Dayntan cusub waxaa lagu kordhin doonaa <strong>recite-kiisii hore</strong>.
+                  </div>
+                );
+              }
+              return null;
+            })()}
           </div>
 
-          {/* Credit Sale Fields: Down Payment & Due Date */}
+          {/* Credit Sale Fields: Down Payment & Optional Due Date */}
           {saleType === 'CREDIT_SALE' && (
             <div className="p-3 bg-amber-50/70 border border-amber-200 rounded-xl space-y-2.5 text-xs">
               <div>
                 <label className="block font-bold text-amber-900 mb-1">
-                  Down Payment Amount
+                  Down Payment Amount (Qaddarka la bixiyay hadda)
                 </label>
                 <input
                   type="number"
@@ -475,18 +533,25 @@ export const NewSalePage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block font-bold text-amber-900 mb-1">Payment Due Date</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block font-bold text-amber-950">
+                    Payment Due Date (Waqtiga dib u soo celinta)
+                  </label>
+                  <span className="text-[10px] text-amber-800 font-semibold bg-amber-200/60 px-1.5 py-0.5 rounded">
+                    Ikhtiyaari (Optional)
+                  </span>
+                </div>
                 <input
                   type="date"
                   value={dueDate}
                   onChange={(e) => setDueDate(e.target.value)}
-                  className="w-full p-2 bg-white border border-amber-300 rounded-lg text-slate-800"
+                  className="w-full p-2 bg-white border border-amber-300 rounded-lg text-slate-800 text-xs"
                 />
               </div>
 
               <div className="flex justify-between font-bold pt-1 text-rose-700 border-t border-amber-200">
                 <span>Remaining Debt Recorded:</span>
-                <span>{currency}{remainingBalance}</span>
+                <span>{currency}{remainingBalance.toFixed(2)}</span>
               </div>
             </div>
           )}
@@ -524,11 +589,44 @@ export const NewSalePage: React.FC = () => {
             )}
           </div>
 
+          {/* Inline Error & Success Banners */}
+          {inlineError && (
+            <div className="p-2.5 bg-rose-50 border border-rose-300 rounded-xl text-rose-800 text-xs flex items-center justify-between animate-fadeIn">
+              <div className="flex items-center space-x-2">
+                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                <span className="font-semibold">{inlineError}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setInlineError(null)}
+                className="text-rose-500 hover:text-rose-800 font-bold ml-2 cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+          )}
+
+          {inlineSuccess && (
+            <div className="p-2.5 bg-emerald-50 border border-emerald-300 rounded-xl text-emerald-800 text-xs flex items-center justify-between animate-fadeIn">
+              <div className="flex items-center space-x-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span className="font-semibold">{inlineSuccess}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setInlineSuccess(null)}
+                className="text-emerald-500 hover:text-emerald-800 font-bold ml-2 cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+          )}
+
           {/* Complete Sale Button */}
           <button
             onClick={handleCompleteSale}
             disabled={submitting || cart.length === 0}
-            className="w-full py-3 bg-[#E6AE43] hover:bg-[#F8C76A] text-[#142746] font-extrabold text-sm rounded-xl shadow-md transition-all flex items-center justify-center space-x-2 disabled:opacity-50"
+            className="w-full py-3 bg-[#E6AE43] hover:bg-[#F8C76A] text-[#142746] font-extrabold text-sm rounded-xl shadow-md transition-all flex items-center justify-center space-x-2 disabled:opacity-50 cursor-pointer"
           >
             {submitting ? (
               <span>Processing sale...</span>

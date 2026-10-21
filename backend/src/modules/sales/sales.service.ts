@@ -82,14 +82,39 @@ export class SalesService {
     let customerDoc: CustomerDocument | null = null;
 
     if (isCredit) {
-      if (!body.customerId) {
-        throw new BadRequestException('Daynta waa in loo qoraa macmiil diiwaangashan (Customer is required for credit sales)');
+      if (body.customerId && Types.ObjectId.isValid(body.customerId)) {
+        customerDoc = await this.customerModel.findOne({ _id: body.customerId, tenantId }).exec();
       }
-      customerDoc = await this.customerModel.findOne({ _id: body.customerId, tenantId }).exec();
+
+      // If customer was not selected by ID, lookup or auto-create by phone / name
       if (!customerDoc) {
-        throw new BadRequestException('Macmiilka la doortay lama helin');
+        const rawPhone = (body.customerPhone || '').trim();
+        const rawName = (body.customerName || '').trim();
+
+        if (rawPhone) {
+          customerDoc = await this.customerModel.findOne({ tenantId, phone: rawPhone }).exec();
+        }
+
+        if (!customerDoc && rawName && rawName !== 'Walk-in Customer') {
+          customerDoc = await this.customerModel.findOne({
+            tenantId,
+            name: { $regex: new RegExp(`^${rawName}$`, 'i') },
+          }).exec();
+        }
+
+        // If not found, auto-create customer so cashiers are never blocked
+        if (!customerDoc) {
+          customerDoc = await this.customerModel.create({
+            tenantId,
+            name: rawName || 'Macmiil Dayn',
+            phone: rawPhone || '',
+            currentDebtBalance: 0,
+            totalPurchases: 0,
+            totalPaid: 0,
+          });
+        }
       }
-    } else if (body.customerId) {
+    } else if (body.customerId && Types.ObjectId.isValid(body.customerId)) {
       customerDoc = await this.customerModel.findOne({ _id: body.customerId, tenantId }).exec();
     }
 
@@ -172,6 +197,132 @@ export class SalesService {
     }
 
     const randomNum = Math.floor(10000 + Math.random() * 90000);
+
+    // Check if customer already has an active open credit debt to consolidate with ("recite-kii hore lee ha loo saxo")
+    let existingOpenDebt: any = null;
+    let existingSale: any = null;
+
+    if (isCredit && customerDoc) {
+      existingOpenDebt = await this.debtModel.findOne({
+        tenantId,
+        customerId: customerDoc._id,
+        status: { $in: [DebtStatus.UNPAID, DebtStatus.PARTIALLY_PAID] },
+      }).sort({ createdAt: -1 }).exec();
+
+      if (existingOpenDebt && existingOpenDebt.saleId) {
+        existingSale = await this.saleModel.findOne({
+          _id: existingOpenDebt.saleId,
+          tenantId,
+          paymentStatus: { $ne: 'CANCELLED' },
+        }).exec();
+      }
+    }
+
+    if (isCredit && existingSale && existingOpenDebt && customerDoc) {
+      // 1. Append items to existing sale
+      existingSale.items.push(...processedItems);
+      existingSale.subtotal += subtotal;
+      existingSale.totalDiscount = (existingSale.totalDiscount || 0) + totalDiscount;
+      existingSale.grandTotal += grandTotal;
+      existingSale.amountPaid += amountPaid;
+      existingSale.balanceDue += balanceDue;
+      existingSale.paymentStatus = existingSale.balanceDue > 0
+        ? (existingSale.amountPaid > 0 ? 'PARTIALLY_PAID' : 'UNPAID')
+        : 'PAID';
+      if (body.notes) {
+        existingSale.notes = `${existingSale.notes ? existingSale.notes + ' | ' : ''}${body.notes}`;
+      }
+      const savedSale = await existingSale.save();
+
+      // 2. Record payment if down payment made
+      if (amountPaid > 0) {
+        await this.paymentModel.create({
+          tenantId,
+          paymentNumber: `PMT-${randomNum}`,
+          saleId: savedSale._id,
+          customerId: customerDoc._id,
+          amount: amountPaid,
+          paymentMethod: body.paymentMethod || PaymentMethod.CASH,
+          paymentDate: new Date(),
+          reference: `Down payment for added credit items on ${savedSale.saleNumber}`,
+          receiptNumber: savedSale.receiptNumber,
+          recordedBy: userId,
+        });
+      }
+
+      // 3. Update existing debt record
+      existingOpenDebt.totalSaleAmount += grandTotal;
+      existingOpenDebt.initialPayment += amountPaid;
+      existingOpenDebt.remainingBalance += balanceDue;
+      if (body.dueDate) {
+        existingOpenDebt.dueDate = new Date(body.dueDate);
+      }
+      if (amountPaid > 0) {
+        existingOpenDebt.transactionHistory.push({
+          amount: amountPaid,
+          date: new Date(),
+          method: body.paymentMethod || PaymentMethod.CASH,
+          reference: 'Additional down payment',
+          balanceAfter: existingOpenDebt.remainingBalance,
+          recordedBy: userId,
+        });
+      }
+      existingOpenDebt.status = existingOpenDebt.remainingBalance <= 0
+        ? DebtStatus.PAID
+        : (existingOpenDebt.amountRepaid > 0 || existingOpenDebt.initialPayment > 0
+          ? DebtStatus.PARTIALLY_PAID
+          : DebtStatus.UNPAID);
+      await existingOpenDebt.save();
+
+      // 4. Update customer running balance
+      customerDoc.currentDebtBalance += balanceDue;
+      customerDoc.totalPurchases += grandTotal;
+      customerDoc.totalPaid += amountPaid;
+      await customerDoc.save();
+
+      // 5. Update existing receipt so it retains the original receipt number with consolidated items
+      let receipt = await this.receiptModel.findOne({
+        tenantId,
+        receiptNumber: savedSale.receiptNumber,
+      }).exec();
+
+      if (receipt) {
+        receipt.items = savedSale.items;
+        receipt.subtotal = savedSale.subtotal;
+        receipt.grandTotal = savedSale.grandTotal;
+        receipt.amountPaid = savedSale.amountPaid;
+        receipt.balanceRemaining = savedSale.balanceDue;
+        if (body.notes) {
+          receipt.notes = savedSale.notes;
+        }
+        await receipt.save();
+      } else {
+        receipt = await this.receiptModel.create({
+          tenantId,
+          receiptNumber: savedSale.receiptNumber,
+          receiptType: ReceiptType.CREDIT_SALE,
+          referenceId: savedSale._id,
+          customerName: savedSale.customerName,
+          customerPhone: savedSale.customerPhone,
+          items: savedSale.items,
+          subtotal: savedSale.subtotal,
+          grandTotal: savedSale.grandTotal,
+          amountPaid: savedSale.amountPaid,
+          balanceRemaining: savedSale.balanceDue,
+          paymentMethod: savedSale.paymentMethod,
+          notes: savedSale.notes,
+        });
+      }
+
+      return {
+        success: true,
+        sale: savedSale,
+        debt: existingOpenDebt,
+        receipt,
+        consolidated: true,
+      };
+    }
+
     const saleNumber = `SALE-${new Date().getFullYear()}-${randomNum}`;
     const receiptNumber = `RCP-${randomNum}`;
 
@@ -217,7 +368,7 @@ export class SalesService {
     let createdDebt: any = null;
     if (isCredit && balanceDue > 0 && customerDoc) {
       const debtNumber = `DBT-${randomNum}`;
-      const dueDate = body.dueDate ? new Date(body.dueDate) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days default
+      const dueDate = body.dueDate ? new Date(body.dueDate) : undefined;
 
       const newDebt = new this.debtModel({
         tenantId,

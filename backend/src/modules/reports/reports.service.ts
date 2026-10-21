@@ -100,6 +100,75 @@ export class ReportsService {
     const grossProfit = totalRevenue - costOfGoodsSold;
     const netProfit = grossProfit - totalExpenses;
 
+    // Profit / Breakeven / Loss classification per user request:
+    // "alabta isla qimahoda lagu gaday, alabta fa idada laga helay, iyo alabta qasarada laga helay intaba"
+    let profitableSalesCount = 0;
+    let profitableItemsCount = 0;
+    let totalProfitEarned = 0;
+
+    let breakevenSalesCount = 0;
+    let breakevenItemsCount = 0;
+    let totalBreakevenRevenue = 0;
+
+    let lossSalesCount = 0;
+    let lossItemsCount = 0;
+    let totalLossIncurred = 0;
+
+    sales.forEach((s) => {
+      let saleProfit = 0;
+      let saleLoss = 0;
+      let saleBreakeven = 0;
+
+      s.items?.forEach((item) => {
+        const qty = item.quantity || 1;
+        const unit = item.unitPrice !== undefined ? item.unitPrice : 0;
+        const cost = item.costPrice !== undefined ? item.costPrice : 0;
+        const diff = (unit - cost) * qty;
+
+        if (diff > 0.001) {
+          saleProfit += diff;
+          profitableItemsCount += qty;
+        } else if (diff < -0.001) {
+          saleLoss += Math.abs(diff);
+          lossItemsCount += qty;
+        } else {
+          saleBreakeven += (item.total || unit * qty);
+          breakevenItemsCount += qty;
+        }
+      });
+
+      if (saleProfit > 0) {
+        profitableSalesCount++;
+        totalProfitEarned += saleProfit;
+      }
+      if (saleLoss > 0) {
+        lossSalesCount++;
+        totalLossIncurred += saleLoss;
+      }
+      if (saleBreakeven > 0 && saleProfit === 0 && saleLoss === 0) {
+        breakevenSalesCount++;
+        totalBreakevenRevenue += saleBreakeven;
+      }
+    });
+
+    const profitClassification = {
+      profitable: {
+        salesCount: profitableSalesCount,
+        itemsCount: profitableItemsCount,
+        totalProfit: Number(totalProfitEarned.toFixed(2)),
+      },
+      breakeven: {
+        salesCount: breakevenSalesCount,
+        itemsCount: breakevenItemsCount,
+        totalRevenue: Number(totalBreakevenRevenue.toFixed(2)),
+      },
+      loss: {
+        salesCount: lossSalesCount,
+        itemsCount: lossItemsCount,
+        totalLoss: Number(totalLossIncurred.toFixed(2)),
+      },
+    };
+
     // Debts & Repayments (all-time snapshot or period)
     const allDebts = await this.debtModel.find({ tenantId }).exec();
     let totalOutstandingDebt = 0;
@@ -193,6 +262,7 @@ export class ReportsService {
         totalDebtRepaid,
         totalCustomers,
         overdueCount,
+        profitClassification,
       },
       charts: {
         salesTrend,
