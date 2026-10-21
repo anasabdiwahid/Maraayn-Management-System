@@ -471,6 +471,115 @@ export class AdminService {
     return { success: true, status: target.status };
   }
 
+  async updateAdministrator(adminId: string, updateDto: any, currentUser: any) {
+    if (currentUser.platformRole !== PlatformRole.SUPER_ADMIN) {
+      throw new ForbiddenException('Only Super Admin can edit administrator accounts');
+    }
+
+    if (!Types.ObjectId.isValid(adminId)) {
+      throw new BadRequestException('Invalid Administrator ID');
+    }
+
+    const target = await this.userModel.findById(adminId);
+    if (!target) throw new NotFoundException('Administrator not found');
+
+    if (
+      target._id.toString() === currentUser._id.toString() &&
+      updateDto.platformRole &&
+      updateDto.platformRole !== PlatformRole.SUPER_ADMIN
+    ) {
+      throw new BadRequestException('You cannot demote your own Super Admin account');
+    }
+
+    if (updateDto.email && updateDto.email.toLowerCase() !== target.email.toLowerCase()) {
+      const emailExists = await this.userModel.findOne({
+        email: updateDto.email.toLowerCase(),
+        _id: { $ne: target._id },
+      });
+      if (emailExists) {
+        throw new BadRequestException('Email is already registered by another account');
+      }
+      target.email = updateDto.email.toLowerCase();
+    }
+
+    if (updateDto.name) target.name = updateDto.name;
+    if (updateDto.phone !== undefined) target.phone = updateDto.phone;
+    if (updateDto.platformRole) target.platformRole = updateDto.platformRole;
+    if (updateDto.status) target.status = updateDto.status;
+
+    if (updateDto.password && updateDto.password.trim().length >= 6) {
+      const salt = await bcrypt.genSalt(10);
+      target.passwordHash = await bcrypt.hash(updateDto.password.trim(), salt);
+    }
+
+    const saved = await target.save();
+
+    await this.auditLogModel.create({
+      userId: currentUser._id,
+      userName: currentUser.name,
+      userRole: currentUser.platformRole,
+      action: 'UPDATE_ADMINISTRATOR',
+      resource: 'User',
+      resourceId: saved._id.toString(),
+      details: {
+        adminEmail: saved.email,
+        name: saved.name,
+        role: saved.platformRole,
+        status: saved.status,
+      },
+    });
+
+    return {
+      id: saved._id,
+      name: saved.name,
+      email: saved.email,
+      phone: saved.phone,
+      platformRole: saved.platformRole,
+      status: saved.status,
+    };
+  }
+
+  async deleteAdministrator(adminId: string, currentUser: any) {
+    if (currentUser.platformRole !== PlatformRole.SUPER_ADMIN) {
+      throw new ForbiddenException('Only Super Admin can delete administrator accounts');
+    }
+
+    if (!Types.ObjectId.isValid(adminId)) {
+      throw new BadRequestException('Invalid Administrator ID');
+    }
+
+    if (currentUser._id.toString() === adminId) {
+      throw new BadRequestException('You cannot delete your own Super Admin account');
+    }
+
+    const target = await this.userModel.findById(adminId);
+    if (!target) throw new NotFoundException('Administrator not found');
+
+    if (target.platformRole === PlatformRole.SUPER_ADMIN) {
+      const superAdminCount = await this.userModel.countDocuments({
+        platformRole: PlatformRole.SUPER_ADMIN,
+        status: UserStatus.ACTIVE,
+      });
+      if (superAdminCount <= 1) {
+        throw new BadRequestException('Cannot delete the last remaining Super Admin');
+      }
+    }
+
+    await this.userModel.findByIdAndDelete(adminId);
+
+    await this.auditLogModel.create({
+      userId: currentUser._id,
+      userName: currentUser.name,
+      userRole: currentUser.platformRole,
+      action: 'DELETE_ADMINISTRATOR',
+      resource: 'User',
+      resourceId: adminId,
+      details: { deletedEmail: target.email, name: target.name, role: target.platformRole },
+    });
+
+    return { success: true, message: 'Administrator deleted successfully' };
+  }
+
   async getAuditLogs(page = 1, limit = 20) {
     const skip = (page - 1) * limit;
     const total = await this.auditLogModel.countDocuments();

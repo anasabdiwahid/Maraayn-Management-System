@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Param, Body, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Param, Body, Query, UseGuards } from '@nestjs/common';
 import { AdminService } from './admin.service.js';
 import { CreateMarketDto, UpdateMarketDto, SuspendMarketDto, CreateAdminDto } from './dto/admin.dto.js';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard.js';
@@ -86,6 +86,22 @@ export class AdminController {
   @Roles(PlatformRole.SUPER_ADMIN)
   async toggleAdminStatus(@Param('id') id: string, @CurrentUser() adminUser: any) {
     return this.adminService.toggleAdminStatus(id, adminUser);
+  }
+
+  @Patch('users/:id')
+  @Roles(PlatformRole.SUPER_ADMIN)
+  async updateAdministrator(
+    @Param('id') id: string,
+    @Body() updateDto: any,
+    @CurrentUser() adminUser: any,
+  ) {
+    return this.adminService.updateAdministrator(id, updateDto, adminUser);
+  }
+
+  @Delete('users/:id')
+  @Roles(PlatformRole.SUPER_ADMIN)
+  async deleteAdministrator(@Param('id') id: string, @CurrentUser() adminUser: any) {
+    return this.adminService.deleteAdministrator(id, adminUser);
   }
 
   @Get('audit-logs')
