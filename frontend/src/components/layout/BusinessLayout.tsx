@@ -19,7 +19,6 @@ import {
 import { useAuth } from '../../context/AuthContext.js';
 import { StorageMeter } from '../common/StorageMeter.js';
 import { NotificationsDropdown } from '../common/NotificationsDropdown.js';
-import { ZoomController } from '../common/ZoomController.js';
 
 export const BusinessLayout: React.FC = () => {
   const { user, tenant, logout } = useAuth();
@@ -184,9 +183,7 @@ export const BusinessLayout: React.FC = () => {
             <p className="text-xs text-brand-amber font-semibold">Your Business, In One Place</p>
           </div>
 
-          <div className="flex items-center space-x-3.5">
-            <ZoomController />
-            <div className="h-5 w-px bg-slate-200" />
+          <div className="flex items-center space-x-4">
             <StorageMeter
               usedBytes={tenant?.storageUsedBytes || 0}
               quotaBytes={tenant?.storageQuotaBytes || 4 * 1024 * 1024 * 1024}

@@ -3,6 +3,12 @@ import { createRoot } from 'react-dom/client';
 import './index.css';
 import App from './App.js';
 
+// Reset any CSS zoom property cleanly
+if (typeof window !== 'undefined') {
+  localStorage.removeItem('maraayn_ui_zoom');
+  document.documentElement.style.zoom = '';
+}
+
 // PWA Service Worker: Only active in Production, clear in Development to prevent stale cache
 if ('serviceWorker' in navigator) {
   if (import.meta.env.PROD) {
