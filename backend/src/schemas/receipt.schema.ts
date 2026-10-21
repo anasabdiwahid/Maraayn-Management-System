@@ -48,6 +48,9 @@ export class Receipt {
   @Prop()
   notes?: string;
 
+  @Prop({ default: false, index: true })
+  isCancelled?: boolean;
+
   createdAt?: Date;
   updatedAt?: Date;
 }

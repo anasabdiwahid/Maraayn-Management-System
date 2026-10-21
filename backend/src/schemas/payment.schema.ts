@@ -39,6 +39,15 @@ export class Payment {
   @Prop({ required: true })
   receiptNumber: string;
 
+  @Prop({ default: false, index: true })
+  isCancelled?: boolean;
+
+  @Prop()
+  cancelledAt?: Date;
+
+  @Prop()
+  cancellationReason?: string;
+
   @Prop({ type: Types.ObjectId, ref: 'User' })
   recordedBy?: Types.ObjectId;
 }

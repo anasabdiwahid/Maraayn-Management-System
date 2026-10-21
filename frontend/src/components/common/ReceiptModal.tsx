@@ -406,6 +406,14 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ isOpen, onClose, rec
           >
             {/* Business Logo & Header */}
             <div className="text-center pb-3 border-b border-dashed border-slate-300">
+              {/* Cancelled Stamp if Voided */}
+              {((receiptData as any).isCancelled || (receiptData.notes && receiptData.notes.includes('CANCELLED'))) && (
+                <div className="mb-2">
+                  <span className="inline-block px-3 py-1 bg-rose-100 border-2 border-rose-500 text-rose-700 font-black text-[11px] uppercase tracking-wider rounded-md rotate-[-2deg] shadow-xs">
+                    ⚠ KANSAL (VOIDED)
+                  </span>
+                </div>
+              )}
               <img
                 src={tenant?.logoUrl || '/logo.png'}
                 alt="Logo"

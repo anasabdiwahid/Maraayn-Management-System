@@ -145,5 +145,29 @@ export class ReceiptsService {
       doc.end();
     });
   }
+
+  async updateReceipt(tenantId: Types.ObjectId, receiptNumber: string, body: any) {
+    const receipt = await this.receiptModel.findOne({ tenantId, receiptNumber }).exec();
+    if (!receipt) throw new NotFoundException('Receipt not found');
+
+    if (body.customerName) receipt.customerName = body.customerName;
+    if (body.customerPhone !== undefined) receipt.customerPhone = body.customerPhone;
+    if (body.notes !== undefined) receipt.notes = body.notes;
+    if (body.paymentMethod) receipt.paymentMethod = body.paymentMethod;
+
+    await receipt.save();
+    return { success: true, message: 'Recite-ka si guul leh ayaa loo cusbooneysiiyay', receipt };
+  }
+
+  async cancelReceipt(tenantId: Types.ObjectId, receiptNumber: string, reason?: string) {
+    const receipt = await this.receiptModel.findOne({ tenantId, receiptNumber }).exec();
+    if (!receipt) throw new NotFoundException('Receipt not found');
+
+    receipt.isCancelled = true;
+    receipt.notes = `${receipt.notes ? receipt.notes + ' ' : ''}[CANCELLED: ${reason || 'Recite-ka waa la kansalay'}]`;
+    await receipt.save();
+
+    return { success: true, message: `Recite-ka ${receiptNumber} waa la kansalay`, receipt };
+  }
 }
 

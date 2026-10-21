@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Param, Body, Query, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Param, Body, Query, UseGuards, Req } from '@nestjs/common';
 import { SalesService } from './sales.service.js';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard.js';
 import { TenantGuard } from '../../common/guards/tenant.guard.js';
@@ -30,5 +30,28 @@ export class SalesController {
   async createSale(@Req() req: any, @Body() body: any, @CurrentUser('_id') userId: any) {
     return this.salesService.createSale(req.tenantId, body, userId);
   }
-}
 
+  @Patch(':id')
+  async updateSale(@Req() req: any, @Param('id') id: string, @Body() body: any) {
+    return this.salesService.updateSale(req.tenantId, id, body);
+  }
+
+  @Post(':id/cancel')
+  async cancelSale(
+    @Req() req: any,
+    @Param('id') id: string,
+    @CurrentUser('_id') userId: any,
+    @Body('reason') reason?: string,
+  ) {
+    return this.salesService.cancelSale(req.tenantId, id, userId, reason);
+  }
+
+  @Delete(':id')
+  async deleteSale(
+    @Req() req: any,
+    @Param('id') id: string,
+    @CurrentUser('_id') userId: any,
+  ) {
+    return this.salesService.cancelSale(req.tenantId, id, userId, 'Tirtiray / Kansalay');
+  }
+}

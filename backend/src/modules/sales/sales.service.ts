@@ -284,5 +284,100 @@ export class SalesService {
       receipt,
     };
   }
+
+  async updateSale(tenantId: Types.ObjectId, id: string, body: any) {
+    if (!Types.ObjectId.isValid(id)) throw new BadRequestException('Invalid sale ID');
+    const sale = await this.saleModel.findOne({ _id: id, tenantId }).exec();
+    if (!sale) throw new NotFoundException('Sale not found');
+
+    if (body.customerName) sale.customerName = body.customerName;
+    if (body.customerPhone !== undefined) sale.customerPhone = body.customerPhone;
+    if (body.notes !== undefined) sale.notes = body.notes;
+    if (body.paymentMethod) sale.paymentMethod = body.paymentMethod;
+
+    await sale.save();
+
+    await this.receiptModel.updateOne(
+      { tenantId, receiptNumber: sale.receiptNumber },
+      {
+        $set: {
+          customerName: sale.customerName,
+          customerPhone: sale.customerPhone,
+          notes: sale.notes,
+          paymentMethod: sale.paymentMethod,
+        },
+      },
+    );
+
+    return { success: true, message: 'Iibka iyo recite-ka waa la cusbooneysiiyay', sale };
+  }
+
+  async cancelSale(tenantId: Types.ObjectId, id: string, userId: any, reason?: string) {
+    if (!Types.ObjectId.isValid(id)) throw new BadRequestException('Invalid sale ID');
+    const sale = await this.saleModel.findOne({ _id: id, tenantId }).exec();
+    if (!sale) throw new NotFoundException('Sale not found');
+
+    if (sale.paymentStatus === 'CANCELLED') {
+      throw new BadRequestException('Iibkan mar hore ayaa la kansalay');
+    }
+
+    // 1. Revert product stocks back to inventory
+    for (const item of sale.items) {
+      if (item.productId) {
+        const product = await this.productModel.findOne({ _id: item.productId, tenantId }).exec();
+        if (product) {
+          product.currentQuantity += item.quantity;
+          await product.save();
+
+          await this.movementModel.create({
+            tenantId,
+            productId: product._id,
+            type: InventoryMovementType.ADJUSTMENT,
+            quantityDelta: item.quantity,
+            balanceAfter: product.currentQuantity,
+            reason: `Kansal garaynta iibka #${sale.saleNumber}`,
+            createdBy: userId,
+          });
+        }
+      }
+    }
+
+    // 2. If credit sale with debt, cancel debt & adjust customer balance
+    if (sale.saleType === SaleType.CREDIT_SALE && sale.customerId) {
+      await this.debtModel.updateMany(
+        { tenantId, saleId: sale._id },
+        { $set: { status: DebtStatus.PAID, notes: `[CANCELLED: ${reason || 'Iibka ayaa la kansalay'}]` } },
+      );
+      if (sale.balanceDue > 0) {
+        await this.customerModel.updateOne(
+          { _id: sale.customerId, tenantId },
+          { $inc: { currentDebtBalance: -sale.balanceDue } },
+        );
+      }
+    }
+
+    // 3. Mark sale as CANCELLED
+    sale.paymentStatus = 'CANCELLED';
+    sale.notes = `${sale.notes ? sale.notes + ' ' : ''}[CANCELLED: ${reason || 'Kansal gareeyay'}]`;
+    await sale.save();
+
+    // 4. Mark linked payments as cancelled
+    await this.paymentModel.updateMany(
+      { tenantId, saleId: sale._id },
+      { $set: { isCancelled: true, notes: `[CANCELLED: ${reason || 'Iibka ayaa la kansalay'}]` } },
+    );
+
+    // 5. Mark linked receipt as cancelled
+    await this.receiptModel.updateMany(
+      { tenantId, referenceId: sale._id },
+      { $set: { isCancelled: true, notes: `[CANCELLED: ${reason || 'Iibka ayaa la kansalay'}]` } },
+    );
+
+    return {
+      success: true,
+      message: `Iibka ${sale.saleNumber} iyo recite-ka ${sale.receiptNumber} si guul leh ayaa loo kansalay, badeecadihiina kaydka ayaa lagu celiyay!`,
+      sale,
+    };
+  }
 }
 
