@@ -17,6 +17,60 @@ import {
 import api from '../../api/client.js';
 import { useAuth } from '../../context/AuthContext.js';
 
+// Realistic 3D Binder Clip Component (Matching user's note card design)
+const BinderClipIcon: React.FC = () => (
+  <div className="absolute -top-7 left-1/2 -translate-x-1/2 z-30 pointer-events-none drop-shadow-md">
+    <svg width="68" height="58" viewBox="0 0 68 58" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="silverChrome" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#ffffff" />
+          <stop offset="25%" stopColor="#e2e8f0" />
+          <stop offset="50%" stopColor="#64748b" />
+          <stop offset="75%" stopColor="#cbd5e1" />
+          <stop offset="100%" stopColor="#475569" />
+        </linearGradient>
+        <linearGradient id="clampGunmetal" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor="#475569" />
+          <stop offset="20%" stopColor="#1e293b" />
+          <stop offset="70%" stopColor="#0f172a" />
+          <stop offset="100%" stopColor="#020617" />
+        </linearGradient>
+        <filter id="binderGlow" x="-20%" y="-20%" width="140%" height="140%">
+          <feDropShadow dx="0" dy="2.5" stdDeviation="2.5" floodColor="#000000" floodOpacity="0.4" />
+        </filter>
+      </defs>
+
+      {/* Upright Wire Handle Loop */}
+      <path
+        d="M 26 34 L 26 10 C 26 3, 42 3, 42 10 L 42 34"
+        stroke="url(#silverChrome)"
+        strokeWidth="3.4"
+        strokeLinecap="round"
+        fill="none"
+        filter="url(#binderGlow)"
+      />
+
+      {/* Crossbar wire connector */}
+      <line x1="28" y1="14" x2="40" y2="14" stroke="url(#silverChrome)" strokeWidth="2.4" strokeLinecap="round" />
+
+      {/* Black Triangular Folded Clamp Body */}
+      <path
+        d="M 12 26 L 56 26 L 60 48 L 8 48 Z"
+        fill="url(#clampGunmetal)"
+        stroke="#0f172a"
+        strokeWidth="1"
+      />
+
+      {/* Top Metallic Highlight Line */}
+      <line x1="14" y1="27.5" x2="54" y2="27.5" stroke="#94a3b8" strokeWidth="1" opacity="0.8" />
+
+      {/* Bottom Steel Gripping Lip */}
+      <rect x="7" y="47" width="54" height="4.5" rx="2" fill="url(#silverChrome)" stroke="#334155" strokeWidth="0.8" />
+      <line x1="9" y1="49" x2="59" y2="49" stroke="#ffffff" strokeWidth="0.8" opacity="0.9" />
+    </svg>
+  </div>
+);
+
 export const AdminUsersPage: React.FC = () => {
   const { user: currentUser } = useAuth();
   const [admins, setAdmins] = useState<any[]>([]);
@@ -737,104 +791,186 @@ export const AdminUsersPage: React.FC = () => {
         </div>
       )}
 
-      {/* STATUS TOGGLE CONFIRMATION MODAL (IN-PAGE DIALOG, NO BROWSER ALERT) */}
+      {/* STATUS TOGGLE CONFIRMATION MODAL (REALISTIC BINDER CLIP NOTE CARD DESIGN) */}
       {statusModalOpen && statusTargetAdmin && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-slate-100 text-center animate-scaleUp">
+        <div className="fixed inset-0 z-50 bg-black/65 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
+          <div className="relative max-w-sm w-full mx-auto pt-7 animate-scaleUp">
+            {/* 3D Binder Clip at the top */}
+            <BinderClipIcon />
+
+            {/* Stacked Paper Sheets Behind (Note Paper effect) */}
+            <div className="absolute inset-0 top-7 bg-slate-200/80 rounded-2xl transform rotate-[-2deg] scale-[0.99] border border-slate-300/80 shadow-sm" />
+            <div className="absolute inset-0 top-7 bg-slate-100 rounded-2xl transform rotate-[1.5deg] scale-[0.99] border border-slate-200 shadow-sm" />
+
+            {/* Main Front Note Paper */}
             <div
-              className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3 ${
-                statusTargetAdmin.status === 'ACTIVE' ? 'bg-amber-100 text-amber-600' : 'bg-emerald-100 text-emerald-600'
-              }`}
+              className="relative bg-white rounded-2xl border-2 border-slate-300 shadow-2xl p-5 pt-6 text-center"
+              style={{
+                backgroundImage: 'repeating-linear-gradient(transparent, transparent 27px, #f1f5f9 28px)',
+              }}
             >
-              {statusTargetAdmin.status === 'ACTIVE' ? (
-                <Ban className="w-6 h-6" />
-              ) : (
-                <CheckCircle2 className="w-6 h-6" />
-              )}
-            </div>
+              {/* System Logo & Official Header */}
+              <div className="flex items-center justify-center space-x-2.5 pb-3 mb-3 border-b border-slate-200/80">
+                <div className="bg-white p-1 rounded-xl border border-slate-200 shadow-xs flex items-center justify-center">
+                  <img src="/logo.png" alt="Maraayn Logo" className="h-7 object-contain" />
+                </div>
+                <div className="text-left">
+                  <h4 className="font-extrabold text-xs text-[#142746] tracking-tight leading-none">Maraayn Control Center</h4>
+                  <p className="text-[10px] text-brand-amber font-bold tracking-wider uppercase mt-0.5">Ogeysiis Rasmi ah (Official Slip)</p>
+                </div>
+              </div>
 
-            <h3 className="font-extrabold text-slate-900 text-base">
-              {statusTargetAdmin.status === 'ACTIVE' ? 'Xaqiijinta Xanibaadda (Deactivate)' : 'Xaqiijinta Furitaanka (Activate)'}
-            </h3>
-
-            <p className="text-xs text-slate-600 mt-2">
-              Ma hubtaa inaad{' '}
-              <strong className={statusTargetAdmin.status === 'ACTIVE' ? 'text-amber-700' : 'text-emerald-700'}>
-                {statusTargetAdmin.status === 'ACTIVE' ? 'xanibto' : 'furto'}
-              </strong>{' '}
-              maamulaha <strong className="text-slate-900">{statusTargetAdmin.name}</strong> ({statusTargetAdmin.email})?
-            </p>
-
-            <p className="text-[11px] text-slate-400 mt-1">
-              {statusTargetAdmin.status === 'ACTIVE'
-                ? 'Maamulahani ma awoodi doono inuu nidaamka soo galo ilaa dib loo furo.'
-                : 'Maamulahani wuxuu si toos ah u awoodi doonaa inuu nidaamka galo.'}
-            </p>
-
-            <div className="mt-5 flex items-center justify-center space-x-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setStatusModalOpen(false);
-                  setStatusTargetAdmin(null);
-                }}
-                className="px-4 py-2 border rounded-xl font-semibold text-xs text-slate-600 hover:bg-slate-50 transition-colors"
-              >
-                Ka Noqo
-              </button>
-              <button
-                type="button"
-                onClick={handleToggle}
-                disabled={actionLoading}
-                className={`px-5 py-2 text-white rounded-xl font-bold text-xs transition-colors shadow-sm disabled:opacity-50 ${
+              {/* Status Badge Icon */}
+              <div
+                className={`w-11 h-11 rounded-full flex items-center justify-center mx-auto mb-2 shadow-inner border ${
                   statusTargetAdmin.status === 'ACTIVE'
-                    ? 'bg-amber-600 hover:bg-amber-700'
-                    : 'bg-emerald-600 hover:bg-emerald-700'
+                    ? 'bg-amber-100 text-amber-700 border-amber-200'
+                    : 'bg-emerald-100 text-emerald-700 border-emerald-200'
                 }`}
               >
-                {actionLoading
-                  ? 'Waa la fulinayaa...'
-                  : statusTargetAdmin.status === 'ACTIVE'
-                  ? 'Haa, Xanib (Deactivate)'
-                  : 'Haa, Fur (Activate)'}
-              </button>
+                {statusTargetAdmin.status === 'ACTIVE' ? (
+                  <Ban className="w-5 h-5" />
+                ) : (
+                  <CheckCircle2 className="w-5 h-5" />
+                )}
+              </div>
+
+              <h3 className="font-extrabold text-slate-900 text-sm">
+                {statusTargetAdmin.status === 'ACTIVE'
+                  ? 'Xaqiijinta Xanibaadda (Deactivate)'
+                  : 'Xaqiijinta Furitaanka (Activate)'}
+              </h3>
+
+              {/* Note Details Box */}
+              <div className="bg-white/95 p-3 rounded-xl border border-slate-200 shadow-xs my-3 text-left space-y-1.5 text-xs">
+                <div className="flex justify-between items-center text-[11px]">
+                  <span className="text-slate-400 font-bold uppercase">Maamulaha:</span>
+                  <span className="font-extrabold text-slate-800">{statusTargetAdmin.name}</span>
+                </div>
+                <div className="flex justify-between items-center text-[11px]">
+                  <span className="text-slate-400 font-bold uppercase">Email:</span>
+                  <span className="font-mono text-slate-600 truncate max-w-[190px]">{statusTargetAdmin.email}</span>
+                </div>
+                <div className="flex justify-between items-center text-[11px]">
+                  <span className="text-slate-400 font-bold uppercase">Role:</span>
+                  <span className="font-bold text-brand-navy">{statusTargetAdmin.platformRole}</span>
+                </div>
+              </div>
+
+              <p className="text-[11px] text-slate-500 leading-relaxed mb-4">
+                {statusTargetAdmin.status === 'ACTIVE'
+                  ? 'Maamulahani ma awoodi doono inuu nidaamka soo galo ilaa dib loo furo.'
+                  : 'Maamulahani wuxuu si toos ah u awoodi doonaa inuu nidaamka galo oo hawshiisa qabsado.'}
+              </p>
+
+              {/* Action Buttons */}
+              <div className="flex items-center justify-center space-x-2 pt-1 border-t border-slate-200/60">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStatusModalOpen(false);
+                    setStatusTargetAdmin(null);
+                  }}
+                  className="px-4 py-2 border border-slate-300 rounded-xl font-bold text-xs text-slate-600 hover:bg-slate-50 transition-colors shadow-xs"
+                >
+                  Ka Noqo
+                </button>
+                <button
+                  type="button"
+                  onClick={handleToggle}
+                  disabled={actionLoading}
+                  className={`px-5 py-2 text-white rounded-xl font-bold text-xs transition-all shadow-md disabled:opacity-50 ${
+                    statusTargetAdmin.status === 'ACTIVE'
+                      ? 'bg-amber-600 hover:bg-amber-700 shadow-amber-600/20'
+                      : 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20'
+                  }`}
+                >
+                  {actionLoading
+                    ? 'Waa la fulinayaa...'
+                    : statusTargetAdmin.status === 'ACTIVE'
+                    ? 'Haa, Xanib (Deactivate)'
+                    : 'Haa, Fur (Activate)'}
+                </button>
+              </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* DELETE CONFIRMATION MODAL */}
+      {/* DELETE CONFIRMATION MODAL (REALISTIC BINDER CLIP NOTE CARD DESIGN) */}
       {deleteModalOpen && selectedAdmin && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-slate-100 text-center animate-scaleUp">
-            <div className="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-3">
-              <AlertTriangle className="w-6 h-6" />
-            </div>
+        <div className="fixed inset-0 z-50 bg-black/65 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
+          <div className="relative max-w-sm w-full mx-auto pt-7 animate-scaleUp">
+            {/* 3D Binder Clip at the top */}
+            <BinderClipIcon />
 
-            <h3 className="font-extrabold text-slate-900 text-base">Xaqiijinta Tirtirka</h3>
-            <p className="text-xs text-slate-600 mt-2">
-              Ma hubtaa inaad tirtirto akoonka maamulaha <strong className="text-slate-900">{selectedAdmin.name}</strong> ({selectedAdmin.email})?
-            </p>
-            <p className="text-[11px] text-red-500 font-semibold mt-1">
-              Tallaabadan dib looma noqon karo oo xogtiisa waa la tirtirayaa.
-            </p>
+            {/* Stacked Paper Sheets Behind */}
+            <div className="absolute inset-0 top-7 bg-slate-200/80 rounded-2xl transform rotate-[-2deg] scale-[0.99] border border-slate-300/80 shadow-sm" />
+            <div className="absolute inset-0 top-7 bg-slate-100 rounded-2xl transform rotate-[1.5deg] scale-[0.99] border border-slate-200 shadow-sm" />
 
-            <div className="mt-5 flex items-center justify-center space-x-2">
-              <button
-                type="button"
-                onClick={() => setDeleteModalOpen(false)}
-                className="px-4 py-2 border rounded-xl font-semibold text-xs text-slate-600 hover:bg-slate-50"
-              >
-                Ka Noqo
-              </button>
-              <button
-                type="button"
-                onClick={handleDelete}
-                disabled={actionLoading}
-                className="px-5 py-2 bg-red-600 text-white rounded-xl font-bold text-xs hover:bg-red-700 transition-colors shadow-sm disabled:opacity-50"
-              >
-                {actionLoading ? 'Waa la tirtirayaa...' : 'Haa, Tirtir'}
-              </button>
+            {/* Main Front Note Paper */}
+            <div
+              className="relative bg-white rounded-2xl border-2 border-slate-300 shadow-2xl p-5 pt-6 text-center"
+              style={{
+                backgroundImage: 'repeating-linear-gradient(transparent, transparent 27px, #f1f5f9 28px)',
+              }}
+            >
+              {/* System Logo & Official Header */}
+              <div className="flex items-center justify-center space-x-2.5 pb-3 mb-3 border-b border-slate-200/80">
+                <div className="bg-white p-1 rounded-xl border border-slate-200 shadow-xs flex items-center justify-center">
+                  <img src="/logo.png" alt="Maraayn Logo" className="h-7 object-contain" />
+                </div>
+                <div className="text-left">
+                  <h4 className="font-extrabold text-xs text-[#142746] tracking-tight leading-none">Maraayn Control Center</h4>
+                  <p className="text-[10px] text-rose-600 font-bold tracking-wider uppercase mt-0.5">Xaqiijinta Tirtirka (Delete Slip)</p>
+                </div>
+              </div>
+
+              {/* Warning Trash Icon */}
+              <div className="w-11 h-11 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto mb-2 shadow-inner border border-rose-200">
+                <Trash2 className="w-5 h-5" />
+              </div>
+
+              <h3 className="font-extrabold text-slate-900 text-sm">Xaqiijinta Tirtirka Maamulaha</h3>
+
+              {/* Note Details Box */}
+              <div className="bg-white/95 p-3 rounded-xl border border-slate-200 shadow-xs my-3 text-left space-y-1.5 text-xs">
+                <div className="flex justify-between items-center text-[11px]">
+                  <span className="text-slate-400 font-bold uppercase">Maamulaha:</span>
+                  <span className="font-extrabold text-slate-800">{selectedAdmin.name}</span>
+                </div>
+                <div className="flex justify-between items-center text-[11px]">
+                  <span className="text-slate-400 font-bold uppercase">Email:</span>
+                  <span className="font-mono text-slate-600 truncate max-w-[190px]">{selectedAdmin.email}</span>
+                </div>
+                <div className="flex justify-between items-center text-[11px]">
+                  <span className="text-slate-400 font-bold uppercase">Role:</span>
+                  <span className="font-bold text-brand-navy">{selectedAdmin.platformRole}</span>
+                </div>
+              </div>
+
+              <p className="text-[11px] text-rose-600 font-semibold mb-4">
+                Tallaabadan dib looma noqon karo oo xogta maamulahan gebi ahaanba waa laga tirtirayaa platform-ka.
+              </p>
+
+              {/* Action Buttons */}
+              <div className="flex items-center justify-center space-x-2 pt-1 border-t border-slate-200/60">
+                <button
+                  type="button"
+                  onClick={() => setDeleteModalOpen(false)}
+                  className="px-4 py-2 border border-slate-300 rounded-xl font-bold text-xs text-slate-600 hover:bg-slate-50 transition-colors shadow-xs"
+                >
+                  Ka Noqo
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDelete}
+                  disabled={actionLoading}
+                  className="px-5 py-2 bg-red-600 text-white rounded-xl font-bold text-xs hover:bg-red-700 transition-all shadow-md shadow-red-600/20 disabled:opacity-50"
+                >
+                  {actionLoading ? 'Waa la tirtirayaa...' : 'Haa, Tirtir'}
+                </button>
+              </div>
             </div>
           </div>
         </div>
