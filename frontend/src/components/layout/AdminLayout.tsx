@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.js';
 import { NotificationsDropdown } from '../common/NotificationsDropdown.js';
+import { ZoomController } from '../common/ZoomController.js';
 
 export const AdminLayout: React.FC = () => {
   const { user, logout } = useAuth();
@@ -129,7 +130,9 @@ export const AdminLayout: React.FC = () => {
             <h2 className="text-sm font-bold text-slate-800">Maraayn Central Platform Administration</h2>
             <p className="text-xs text-slate-500">Your Business, In One Place</p>
           </div>
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-3.5">
+            <ZoomController />
+            <div className="h-6 w-px bg-slate-200" />
             <NotificationsDropdown />
             <div className="h-6 w-px bg-slate-200" />
             <div className="flex items-center space-x-2">

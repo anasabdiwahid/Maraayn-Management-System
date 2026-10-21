@@ -26,6 +26,13 @@
   }
 }
 
+/* Scaled desktop view: 75% density so the whole dashboard and POS fits cleanly without manual Ctrl - zooming */
+@media screen and (min-width: 1024px) {
+  html {
+    zoom: 0.75;
+  }
+}
+
 /* Custom scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
@@ -47,6 +54,9 @@
 
 /* Print styling for receipts */
 @media print {
+  html, body {
+    zoom: 1 !important;
+  }
   body * {
     visibility: hidden;
   }
