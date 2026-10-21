@@ -141,7 +141,7 @@ export const AdminLayout: React.FC = () => {
         </header>
 
         {/* Page Content Outlet */}
-        <main className="flex-1 w-full min-w-0 p-4 md:p-8">
+        <main className="flex-1 w-full min-w-0 p-3 sm:p-5 lg:p-6">
           <Outlet />
         </main>
       </div>

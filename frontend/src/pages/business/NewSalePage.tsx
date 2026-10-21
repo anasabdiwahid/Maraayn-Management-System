@@ -245,43 +245,43 @@ export const NewSalePage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Page Title */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-extrabold text-[#142746] tracking-tight">
+          <h1 className="text-xl font-extrabold text-[#142746] tracking-tight">
             New Sale (Point of Sale — POS)
           </h1>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="text-[11px] text-slate-500 mt-0.5">
             Select products, choose payment terms (Cash or Credit), and issue receipts
           </p>
         </div>
       </div>
 
       {/* POS Two-Column Grid: Left Catalog, Right Shopping Cart */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
         {/* Left Side: Product Catalog (7 cols) */}
-        <div className="lg:col-span-7 space-y-4">
+        <div className="lg:col-span-7 space-y-3">
           {/* Search & Category Pills */}
-          <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+          <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-xs space-y-2.5">
             <div className="relative">
-              <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
+              <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
               <input
                 type="text"
                 placeholder="Search product name, SKU, or barcode (scanner supported)..."
                 value={searchProduct}
                 onChange={(e) => setSearchProduct(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-brand-amber focus:bg-white"
+                className="w-full pl-9 pr-4 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-brand-amber focus:bg-white"
               />
             </div>
 
             {/* Category Filter Pills */}
-            <div className="flex gap-1.5 overflow-x-auto pb-1 text-[11px] font-semibold text-slate-600">
+            <div className="flex gap-1.5 overflow-x-auto pb-0.5 text-[11px] font-semibold text-slate-600">
               {categories.map((cat) => (
                 <button
                   key={cat}
                   onClick={() => setSelectedCategory(cat)}
-                  className={`px-3 py-1 rounded-lg shrink-0 transition-colors ${
+                  className={`px-2.5 py-1 rounded-md shrink-0 transition-colors ${
                     selectedCategory === cat
                       ? 'bg-brand-navy text-white font-bold'
                       : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
@@ -294,16 +294,16 @@ export const NewSalePage: React.FC = () => {
           </div>
 
           {/* Product Items Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-[620px] overflow-y-auto pr-1">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 max-h-[580px] overflow-y-auto pr-1">
             {filteredProducts.map((p) => {
               const inStock = p.currentQuantity > 0;
               return (
                 <div
                   key={p._id}
                   onClick={() => inStock && addToCart(p)}
-                  className={`p-3.5 rounded-2xl border transition-all text-left flex flex-col justify-between ${
+                  className={`p-3 rounded-xl border transition-all text-left flex flex-col justify-between ${
                     inStock
-                      ? 'bg-white border-slate-200 hover:border-brand-amber hover:shadow-md cursor-pointer'
+                      ? 'bg-white border-slate-200 hover:border-brand-amber hover:shadow-sm cursor-pointer'
                       : 'bg-slate-50 border-slate-200 opacity-60 cursor-not-allowed'
                   }`}
                 >
@@ -314,12 +314,12 @@ export const NewSalePage: React.FC = () => {
                     <h4 className="font-bold text-xs text-slate-900 line-clamp-2 mt-0.5">{p.name}</h4>
                   </div>
 
-                  <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between">
-                    <span className="text-sm font-extrabold text-[#142746]">
+                  <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between">
+                    <span className="text-xs font-black text-[#142746]">
                       {currency}{p.sellingPrice}
                     </span>
                     <span
-                      className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                      className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
                         inStock ? 'bg-slate-100 text-slate-700' : 'bg-rose-100 text-rose-700'
                       }`}
                     >
@@ -333,18 +333,18 @@ export const NewSalePage: React.FC = () => {
         </div>
 
         {/* Right Side: Cart, Customer Picker & Payment (5 cols) */}
-        <div className="lg:col-span-5 bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-4">
-          <div className="flex items-center justify-between border-b pb-3">
+        <div className="lg:col-span-5 bg-white rounded-xl border border-slate-200 shadow-xs p-4 space-y-3">
+          <div className="flex items-center justify-between border-b pb-2.5">
             <div className="flex items-center space-x-2">
-              <ShoppingCart className="w-5 h-5 text-brand-navy" />
-              <h3 className="font-extrabold text-sm text-slate-900">
+              <ShoppingCart className="w-4 h-4 text-brand-navy" />
+              <h3 className="font-extrabold text-xs sm:text-sm text-slate-900">
                 Cart ({cart.reduce((a, b) => a + b.quantity, 0)})
               </h3>
             </div>
             {cart.length > 0 && (
               <button
                 onClick={() => setCart([])}
-                className="text-[11px] text-rose-600 hover:underline font-semibold"
+                className="text-[11px] text-rose-600 hover:underline font-semibold cursor-pointer"
               >
                 Clear Cart
               </button>
