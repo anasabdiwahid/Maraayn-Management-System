@@ -11,6 +11,8 @@ import {
   Loader2,
   ExternalLink,
   CheckCircle2,
+  Receipt,
+  FileSpreadsheet,
 } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
@@ -40,11 +42,71 @@ interface ReceiptModalProps {
     paymentMethod?: string;
     notes?: string;
     createdAt?: string;
+    isCancelled?: boolean;
   };
 }
 
+// Helper: Convert numbers to English words for the "In word" line of the voucher
+const numberToWords = (num: number, currencyName: string = 'Dollar'): string => {
+  if (isNaN(num) || num < 0) return '';
+  if (num === 0) return `Zero ${currencyName}s Only`;
+
+  const ones = [
+    '', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine',
+    'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen',
+    'Seventeen', 'Eighteen', 'Nineteen'
+  ];
+  const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+
+  const convertGroup = (n: number): string => {
+    let s = '';
+    if (n >= 100) {
+      s += ones[Math.floor(n / 100)] + ' Hundred ';
+      n %= 100;
+    }
+    if (n >= 20) {
+      s += tens[Math.floor(n / 10)] + ' ';
+      n %= 10;
+    }
+    if (n > 0) {
+      s += ones[n] + ' ';
+    }
+    return s.trim();
+  };
+
+  const integerPart = Math.floor(num);
+  const centsPart = Math.round((num - integerPart) * 100);
+
+  let result = '';
+  if (integerPart === 0) {
+    result = 'Zero';
+  } else {
+    let intNum = integerPart;
+    const billions = Math.floor(intNum / 1000000000);
+    intNum %= 1000000000;
+    const millions = Math.floor(intNum / 1000000);
+    intNum %= 1000000;
+    const thousands = Math.floor(intNum / 1000);
+    const remainder = intNum % 1000;
+
+    if (billions > 0) result += convertGroup(billions) + ' Billion ';
+    if (millions > 0) result += convertGroup(millions) + ' Million ';
+    if (thousands > 0) result += convertGroup(thousands) + ' Thousand ';
+    if (remainder > 0) result += convertGroup(remainder) + ' ';
+  }
+
+  result = result.trim() + (integerPart === 1 ? ` ${currencyName}` : ` ${currencyName}s`);
+
+  if (centsPart > 0) {
+    result += ` and ${convertGroup(centsPart)} ${centsPart === 1 ? 'Cent' : 'Cents'}`;
+  }
+
+  return result.trim() + ' Only';
+};
+
 export const ReceiptModal: React.FC<ReceiptModalProps> = ({ isOpen, onClose, receiptData }) => {
   const { tenant } = useAuth();
+  const [viewMode, setViewMode] = useState<'voucher' | 'thermal'>('voucher');
   const [copied, setCopied] = useState(false);
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
   const [showWhatsAppGuide, setShowWhatsAppGuide] = useState(false);
@@ -56,6 +118,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ isOpen, onClose, rec
   const currency = tenant?.currencySymbol || '$';
   const remainingDebt = receiptData.balanceRemaining ?? receiptData.balanceDue ?? 0;
   const isCredit = remainingDebt > 0;
+  const isVoided = !!(receiptData.isCancelled || (receiptData.notes && receiptData.notes.includes('CANCELLED')));
 
   // Clean customer phone number
   const formatPhone = (phoneRaw?: string) => {
@@ -118,59 +181,51 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ isOpen, onClose, rec
           return;
         } catch (shareErr: any) {
           if (shareErr.name === 'AbortError') {
-            // User cancelled share sheet
             setLoadingAction(null);
             return;
           }
+          console.warn('Web Share API aborted or failed, switching to desktop flow:', shareErr);
         }
       }
 
-      // Desktop / Web Fallback:
-      // A) Copy image to system clipboard so user can press Ctrl+V in WhatsApp Web
-      let clipSuccess = false;
+      // Desktop or fallback flow:
       try {
-        if (navigator.clipboard && (window as any).ClipboardItem) {
-          await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-          clipSuccess = true;
-        }
-      } catch (err) {
-        console.warn('Clipboard writeImage not supported or denied:', err);
+        const item = new ClipboardItem({ 'image/png': blob });
+        await navigator.clipboard.write([item]);
+      } catch (clipboardErr) {
+        console.warn('Clipboard image write failed:', clipboardErr);
       }
 
-      // B) Trigger automatic download of image file so user has it on disk
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = fileName;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => window.URL.revokeObjectURL(url), 1000);
 
-      // C) Open WhatsApp Web
+      const customerText = encodeURIComponent(
+        `Asc ${receiptData.customerName || 'Macaamil'}, kani waa recite-kaaga #${receiptData.receiptNumber} ee ganacsiga ${tenant?.name || 'Maraayn'}. Fadlan lifaaqa hoose eeg.`
+      );
       const waUrl = customerPhoneClean
-        ? `https://wa.me/${customerPhoneClean}`
+        ? `https://web.whatsapp.com/send?phone=${customerPhoneClean}&text=${customerText}`
         : `https://web.whatsapp.com/`;
 
+      window.open(waUrl, '_blank');
+
       setGuideMessage(
-        clipSuccess
-          ? 'Sawirka recite-ka waa la koobiyeeyay (Ctrl+V) waana la soo degsaday! WhatsApp markuu furmo, kaliya taabo Ctrl+V si aad sawirka ugu dirto macmiilka.'
-          : 'Sawirka recite-ka waa la soo degsaday! WhatsApp markuu furmo, u jiid (drag) ama u dir sawirka macmiilka.'
+        'Sawirka recite-ka waa la soo dejiyey oo Clipboard-ka ayaa lagu koobiyeeyay! WhatsApp Web ayaa furmay — kaliya riix Paste (Ctrl + V) si aad macmiilka ugu dirto.'
       );
       setShowWhatsAppGuide(true);
-
-      setTimeout(() => {
-        window.open(waUrl, '_blank');
-      }, 500);
     } catch (err) {
-      console.error('Failed to share receipt image:', err);
-      alert('Khalad ayaa dhacay markii sawirka la diyaarinayay.');
+      console.error('Error sharing receipt image:', err);
     } finally {
       setLoadingAction(null);
     }
   };
 
-  // 2. SHARE RECEIPT AS DOCUMENT (PDF) ON WHATSAPP
+  // 2. SHARE DOCUMENT (PDF) ON WHATSAPP
   const handleWhatsAppShareDocument = async () => {
     setLoadingAction('whatsapp-pdf');
     try {
@@ -178,11 +233,12 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ isOpen, onClose, rec
       if (!canvas) throw new Error('Could not render receipt canvas');
 
       const imgData = canvas.toDataURL('image/png');
-      const mmWidth = 80; // 80mm thermal receipt standard
+      const isVoucher = viewMode === 'voucher';
+      const mmWidth = isVoucher ? 210 : 80;
       const mmHeight = (canvas.height / canvas.width) * mmWidth;
 
       const pdf = new jsPDF({
-        orientation: 'portrait',
+        orientation: isVoucher ? 'landscape' : 'portrait',
         unit: 'mm',
         format: [mmWidth, mmHeight],
       });
@@ -201,7 +257,8 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ isOpen, onClose, rec
         try {
           await navigator.share({
             files: [pdfFile],
-            title: `Receipt #${receiptData.receiptNumber}`,
+            title: `${tenant?.name || 'Maraayn'} Receipt #${receiptData.receiptNumber}`,
+            text: `Receipt PDF #${receiptData.receiptNumber} - ${tenant?.name || 'Maraayn Business'}`,
           });
           setLoadingAction(null);
           return;
@@ -210,49 +267,43 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ isOpen, onClose, rec
             setLoadingAction(null);
             return;
           }
+          console.warn('Web Share PDF failed, switching to desktop flow:', shareErr);
         }
       }
 
-      // Desktop: Save PDF and open WhatsApp Web
       pdf.save(fileName);
-      setGuideMessage(
-        'Document-ka PDF ee recite-ka waa la soo degsaday! WhatsApp-ka markuu furmo, u dir macmiilka faylka PDF-ka ah.'
-      );
-      setShowWhatsAppGuide(true);
 
+      const customerText = encodeURIComponent(
+        `Asc ${receiptData.customerName || 'Macaamil'}, kani waa lifaaqa recite-kaaga Document (PDF) #${receiptData.receiptNumber} ee ${tenant?.name || 'Maraayn'}.`
+      );
       const waUrl = customerPhoneClean
-        ? `https://wa.me/${customerPhoneClean}`
+        ? `https://web.whatsapp.com/send?phone=${customerPhoneClean}&text=${customerText}`
         : `https://web.whatsapp.com/`;
 
-      setTimeout(() => {
-        window.open(waUrl, '_blank');
-      }, 500);
+      window.open(waUrl, '_blank');
+
+      setGuideMessage(
+        'Document-ka PDF ee recite-ka waa la soo dejiyey! WhatsApp Web ayaa furmay — kaliya lifaaq (Attach Document) oo u dir macmiilka.'
+      );
+      setShowWhatsAppGuide(true);
     } catch (err) {
-      console.error('Failed to share PDF receipt:', err);
-      alert('Khalad ayaa dhacay markii document-ka PDF la diyaarinayay.');
+      console.error('Error sharing receipt document:', err);
     } finally {
       setLoadingAction(null);
     }
   };
 
-  // 3. DIRECT DOWNLOAD IMAGE (PNG)
+  // 3. DOWNLOAD IMAGE (PNG)
   const handleDownloadImage = async () => {
     setLoadingAction('download-image');
     try {
       const canvas = await generateReceiptCanvas();
       if (!canvas) return;
 
-      const blob = await canvasToBlob(canvas);
-      if (!blob) return;
-
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `Receipt-${receiptData.receiptNumber}.png`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      const link = document.createElement('a');
+      link.download = `Receipt-${receiptData.receiptNumber}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
     } catch (err) {
       console.error('Error downloading image:', err);
     } finally {
@@ -260,39 +311,20 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ isOpen, onClose, rec
     }
   };
 
-  // 4. DIRECT DOWNLOAD PDF DOCUMENT
+  // 4. DOWNLOAD PDF
   const handleDownloadPdf = async () => {
     setLoadingAction('download-pdf');
     try {
-      // First try authenticated backend endpoint
-      try {
-        const res = await api.get(`/receipts/${receiptData.receiptNumber}/pdf`, {
-          responseType: 'blob',
-        });
-        const blob = new Blob([res.data], { type: 'application/pdf' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `Receipt-${receiptData.receiptNumber}.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
-        return;
-      } catch (backendErr) {
-        console.warn('Backend PDF endpoint unavailable, generating via jsPDF:', backendErr);
-      }
-
-      // Fallback: Client-side jsPDF generation
       const canvas = await generateReceiptCanvas();
       if (!canvas) return;
 
       const imgData = canvas.toDataURL('image/png');
-      const mmWidth = 80;
+      const isVoucher = viewMode === 'voucher';
+      const mmWidth = isVoucher ? 210 : 80;
       const mmHeight = (canvas.height / canvas.width) * mmWidth;
 
       const pdf = new jsPDF({
-        orientation: 'portrait',
+        orientation: isVoucher ? 'landscape' : 'portrait',
         unit: 'mm',
         format: [mmWidth, mmHeight],
       });
@@ -332,7 +364,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ isOpen, onClose, rec
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // WhatsApp plain text url (Optional fallback)
+  // WhatsApp plain text url (Fallback)
   const getWhatsAppTextUrl = () => {
     let text = `*${(tenant?.name || 'Maraayn Business').toUpperCase()} — RECEIPT*\n`;
     text += `Receipt Number: *${receiptData.receiptNumber}*\n`;
@@ -357,18 +389,55 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ isOpen, onClose, rec
       : `https://wa.me/?text=${encodeURIComponent(text)}`;
   };
 
+  // Items string for the "For" row of the voucher
+  const itemsDescription =
+    receiptData.items && receiptData.items.length > 0
+      ? receiptData.items.map((i) => `${i.productName || 'Item'} (x${i.quantity || 1})`).join(', ')
+      : receiptData.notes || 'Goods & Services Transaction';
+
+  const amountInWords = numberToWords(receiptData.grandTotal, currency === '$' ? 'Dollar' : 'Shilling');
+
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 animate-fadeIn">
-      <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl overflow-hidden border border-slate-100 flex flex-col max-h-[92vh] animate-scaleUp">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/65 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 animate-fadeIn">
+      <div className="bg-white rounded-2xl max-w-2xl sm:max-w-3xl w-full shadow-2xl overflow-hidden border border-slate-100 flex flex-col max-h-[95vh] animate-scaleUp">
         {/* Modal Top Bar */}
-        <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-100 bg-slate-50">
-          <div className="flex items-center space-x-2">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-3 border-b border-slate-100 bg-slate-50/90">
+          <div className="flex items-center space-x-2 sm:space-x-3">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-            <h3 className="font-extrabold text-slate-800 text-sm">Receipt Preview</h3>
-            <span className="text-[11px] font-mono font-bold text-slate-400 bg-slate-200/60 px-2 py-0.5 rounded">
+            <h3 className="font-extrabold text-slate-800 text-sm hidden sm:inline">Receipt Voucher</h3>
+            <span className="text-[11px] font-mono font-bold text-slate-500 bg-slate-200/80 px-2 py-0.5 rounded">
               #{receiptData.receiptNumber}
             </span>
           </div>
+
+          {/* Toggle Voucher vs Thermal View */}
+          <div className="flex items-center bg-slate-200/80 p-0.5 rounded-lg text-xs font-semibold">
+            <button
+              type="button"
+              onClick={() => setViewMode('voucher')}
+              className={`flex items-center space-x-1.5 px-3 py-1 rounded-md transition-all ${
+                viewMode === 'voucher'
+                  ? 'bg-[#0f233a] text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5" />
+              <span>Money Receipt</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('thermal')}
+              className={`flex items-center space-x-1.5 px-3 py-1 rounded-md transition-all ${
+                viewMode === 'thermal'
+                  ? 'bg-[#0f233a] text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <Receipt className="w-3.5 h-3.5" />
+              <span>Thermal (80mm)</span>
+            </button>
+          </div>
+
           <button
             onClick={onClose}
             className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200/70 transition-colors"
@@ -383,9 +452,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ isOpen, onClose, rec
           <div className="bg-emerald-50 border-b border-emerald-200 p-3 px-4 flex items-start space-x-3 text-xs text-emerald-900 animate-fadeIn">
             <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
             <div className="flex-1">
-              <strong className="font-bold block text-emerald-950">
-                WhatsApp Diyaar Ah!
-              </strong>
+              <strong className="font-bold block text-emerald-950">WhatsApp Diyaar Ah!</strong>
               <p className="mt-0.5 leading-relaxed">{guideMessage}</p>
             </div>
             <button
@@ -397,141 +464,356 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ isOpen, onClose, rec
           </div>
         )}
 
-        {/* Receipt Printable Container */}
-        <div className="overflow-y-auto p-4 sm:p-6 bg-slate-100 flex justify-center">
-          <div
-            id="printable-receipt"
-            ref={receiptRef}
-            className="w-full max-w-[320px] bg-white p-6 shadow-md rounded-lg font-mono text-xs text-slate-800 border border-slate-200 select-none"
-          >
-            {/* Business Logo & Header */}
-            <div className="text-center pb-3 border-b border-dashed border-slate-300">
-              {/* Cancelled Stamp if Voided */}
-              {((receiptData as any).isCancelled || (receiptData.notes && receiptData.notes.includes('CANCELLED'))) && (
-                <div className="mb-2">
-                  <span className="inline-block px-3 py-1 bg-rose-100 border-2 border-rose-500 text-rose-700 font-black text-[11px] uppercase tracking-wider rounded-md rotate-[-2deg] shadow-xs">
+        {/* Printable Receipt Container Scroll View */}
+        <div className="overflow-y-auto p-3 sm:p-6 bg-slate-100 flex justify-center items-center min-h-[360px]">
+          {viewMode === 'voucher' ? (
+            /* ============================================================ */
+            /* 1. MONEY RECEIPT VOUCHER (Exact Match to User's Uploaded Photo) */
+            /* ============================================================ */
+            <div
+              id="printable-receipt"
+              ref={receiptRef}
+              className="w-full max-w-2xl bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden relative select-none font-sans"
+            >
+              {/* Voided Stamp Overlay */}
+              {isVoided && (
+                <div className="absolute top-10 right-10 z-20 pointer-events-none">
+                  <span className="inline-block px-4 py-1.5 bg-rose-50 border-2 border-rose-600 text-rose-700 font-black text-xs sm:text-sm uppercase tracking-widest rounded-lg rotate-[-10deg] shadow-lg">
                     ⚠ KANSAL (VOIDED)
                   </span>
                 </div>
               )}
-              <img
-                src={tenant?.logoUrl || '/logo.png'}
-                alt="Logo"
-                crossOrigin="anonymous"
-                className="h-10 mx-auto object-contain mb-2"
-                onError={(e) => {
-                  (e.target as any).src = '/logo.png';
-                }}
-              />
-              <h2 className="text-base font-extrabold uppercase text-slate-900 tracking-tight">
-                {tenant?.name || 'Maraayn Business'}
-              </h2>
-              {tenant?.location && <p className="text-[11px] text-slate-600">{tenant.location}</p>}
-              {tenant?.ownerPhone && <p className="text-[11px] text-slate-600">Tel: {tenant.ownerPhone}</p>}
-              <p className="text-[10px] text-brand-amber font-semibold mt-1">
-                Your Business, In One Place
-              </p>
-            </div>
 
-            {/* Receipt Meta */}
-            <div className="py-2.5 border-b border-dashed border-slate-300 space-y-1 text-[11px]">
-              <div className="flex justify-between">
-                <span className="text-slate-500">Receipt No:</span>
-                <span className="font-bold text-slate-900">{receiptData.receiptNumber}</span>
+              {/* Top Geometric Ribbon (Deep Navy & Golden Amber) */}
+              <div className="relative h-6 sm:h-7 w-full bg-amber-500 overflow-hidden">
+                <div
+                  className="absolute top-0 left-0 h-full w-48 sm:w-60 bg-[#0f233a]"
+                  style={{ clipPath: 'polygon(0 0, 100% 0, 82% 100%, 0 100%)' }}
+                />
               </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">Date:</span>
-                <span>{new Date(receiptData.createdAt || Date.now()).toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">Customer:</span>
-                <span className="font-semibold text-slate-900">
-                  {receiptData.customerName || 'Walk-in Customer'}
-                </span>
-              </div>
-              {receiptData.customerPhone && (
-                <div className="flex justify-between">
-                  <span className="text-slate-500">Phone:</span>
-                  <span className="font-mono">{receiptData.customerPhone}</span>
+
+              {/* Header Content Row */}
+              <div className="px-5 sm:px-8 pt-3.5 pb-2 flex items-center justify-between gap-2">
+                {/* Left: Logo & Tagline */}
+                <div className="flex items-center space-x-2 sm:space-x-3 max-w-[190px]">
+                  <img
+                    src={tenant?.logoUrl || '/logo.png'}
+                    alt="Logo"
+                    crossOrigin="anonymous"
+                    className="h-8 sm:h-9 object-contain"
+                    onError={(e) => {
+                      (e.target as any).src = '/logo.png';
+                    }}
+                  />
+                  <div className="min-w-0">
+                    <span className="font-black text-xs sm:text-sm text-[#0f233a] uppercase tracking-wider block leading-tight truncate">
+                      {tenant?.name || 'Maraayn'}
+                    </span>
+                    <span className="text-[9px] text-slate-500 font-medium block leading-tight truncate">
+                      Your Business, In One Place
+                    </span>
+                  </div>
                 </div>
-              )}
-            </div>
 
-            {/* Items Table */}
-            <div className="py-3 border-b border-dashed border-slate-300">
-              <div className="flex justify-between text-[11px] font-bold text-slate-700 pb-1.5 border-b border-slate-200">
-                <span>Item</span>
-                <div className="space-x-4">
-                  <span>Qty</span>
-                  <span>Total</span>
+                {/* Center: MONEY RECEIPT Title */}
+                <div className="text-center shrink-0">
+                  <h1 className="font-black text-base sm:text-xl text-[#0f233a] tracking-wider uppercase leading-none">
+                    MONEY RECEIPT
+                  </h1>
+                  <div className="flex items-center justify-center space-x-3 text-[9px] sm:text-[10px] text-slate-500 font-medium mt-1">
+                    {tenant?.ownerPhone && <span>📞 {tenant.ownerPhone}</span>}
+                    {(tenant?.ownerEmail || (tenant as any)?.email) && (
+                      <span>✉ {tenant?.ownerEmail || (tenant as any)?.email}</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Right: Business Name & Address */}
+                <div className="text-right max-w-[190px]">
+                  <h3 className="font-black text-xs sm:text-sm text-[#0f233a] uppercase truncate leading-tight">
+                    {tenant?.name || 'Maraayn Business'}
+                  </h3>
+                  <p className="text-[9px] text-slate-500 leading-tight mt-0.5 truncate">
+                    {tenant?.location || 'Mogadishu, Somalia'}
+                  </p>
+                  <p className="text-[9px] text-slate-400 leading-tight truncate">
+                    Receipt #{receiptData.receiptNumber}
+                  </p>
                 </div>
               </div>
 
-              <div className="divide-y divide-slate-100 py-1">
-                {receiptData.items && receiptData.items.length > 0 ? (
-                  receiptData.items.map((item, idx) => (
-                    <div key={idx} className="flex justify-between py-1 text-[11px]">
-                      <span className="truncate max-w-[150px] font-medium">{item.productName}</span>
-                      <div className="space-x-4 text-right">
-                        <span className="text-slate-500">x{item.quantity || 1}</span>
-                        <span className="font-semibold">
-                          {currency}
-                          {item.total ?? item.unitPrice}
-                        </span>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="py-1 text-center text-slate-400">Standard Transaction</div>
-                )}
-              </div>
-            </div>
+              {/* Bold Golden Amber Divider Line */}
+              <div className="h-1 bg-amber-500 w-full mt-1.5" />
 
-            {/* Calculations & Debt */}
-            <div className="py-2.5 space-y-1.5 text-[11px]">
-              <div className="flex justify-between text-slate-600">
-                <span>Grand Total:</span>
-                <span className="font-bold text-slate-900 text-xs">
-                  {currency}
-                  {receiptData.grandTotal}
-                </span>
-              </div>
-              <div className="flex justify-between text-slate-600">
-                <span>Amount Paid:</span>
-                <span className="font-bold text-emerald-600">
-                  {currency}
-                  {receiptData.amountPaid}
-                </span>
-              </div>
-
-              {isCredit && (
-                <div className="flex justify-between py-1 px-2 bg-rose-50 rounded border border-rose-200 text-rose-700 font-bold">
-                  <span>Remaining Debt:</span>
-                  <span>
-                    {currency}
-                    {remainingDebt}
+              {/* Sub-header Meta Line (NO. & Date) */}
+              <div className="flex items-center justify-between px-5 sm:px-8 py-2 text-[11px] sm:text-xs font-bold text-[#0f233a] bg-slate-50/50 border-b border-slate-100">
+                <div className="flex items-center space-x-2">
+                  <span className="font-black text-slate-800">NO.</span>
+                  <span className="font-mono font-bold text-brand-navy border-b border-dotted border-slate-400 px-2 min-w-[110px] sm:min-w-[140px]">
+                    {receiptData.receiptNumber}
                   </span>
                 </div>
-              )}
+                <div className="flex items-center space-x-2">
+                  <span className="font-black text-slate-800">Date</span>
+                  <span className="font-medium text-slate-700 border-b border-dotted border-slate-400 px-2 min-w-[120px] sm:min-w-[150px] text-center">
+                    {new Date(receiptData.createdAt || Date.now()).toLocaleString()}
+                  </span>
+                </div>
+              </div>
 
-              <div className="flex justify-between text-slate-500 text-[10px] pt-1">
-                <span>Payment Method:</span>
-                <span className="uppercase font-semibold">{receiptData.paymentMethod || 'CASH'}</span>
+              {/* Voucher Form Rows (Dotted Fill-ins) */}
+              <div className="px-5 sm:px-8 py-4 sm:py-5 space-y-3 sm:space-y-3.5 text-xs text-slate-800">
+                {/* Row 1: Received with thanks from */}
+                <div className="flex items-baseline space-x-2">
+                  <span className="font-bold text-slate-700 shrink-0">Received with thanks from</span>
+                  <div className="flex-1 border-b border-dotted border-slate-400 pb-0.5 font-bold text-slate-900 px-2 truncate">
+                    {receiptData.customerName || 'Walk-in Customer'}
+                    {receiptData.customerPhone ? ` (${receiptData.customerPhone})` : ''}
+                  </div>
+                </div>
+
+                {/* Row 2: Amount in numbers */}
+                <div className="flex items-baseline space-x-2">
+                  <span className="font-bold text-slate-700 shrink-0">Amount</span>
+                  <div className="flex-1 border-b border-dotted border-slate-400 pb-0.5 font-mono font-extrabold text-emerald-700 px-2">
+                    {currency}
+                    {receiptData.grandTotal.toFixed(2)}
+                  </div>
+                </div>
+
+                {/* Row 3: In word */}
+                <div className="flex items-baseline space-x-2">
+                  <span className="font-bold text-slate-700 shrink-0">In word</span>
+                  <div className="flex-1 border-b border-dotted border-slate-400 pb-0.5 italic font-medium text-slate-700 px-2 truncate">
+                    {amountInWords}
+                  </div>
+                </div>
+
+                {/* Row 4: For & Branch */}
+                <div className="flex items-baseline space-x-3">
+                  <div className="flex-1 flex items-baseline space-x-2 min-w-0">
+                    <span className="font-bold text-slate-700 shrink-0">For</span>
+                    <div className="flex-1 border-b border-dotted border-slate-400 pb-0.5 font-semibold text-slate-800 px-2 truncate">
+                      {itemsDescription}
+                    </div>
+                  </div>
+                  <div className="w-1/3 flex items-baseline space-x-2 min-w-0">
+                    <span className="font-bold text-slate-700 shrink-0">Branch</span>
+                    <div className="flex-1 border-b border-dotted border-slate-400 pb-0.5 font-medium text-slate-700 px-2 truncate">
+                      {tenant?.location || 'Main Branch'}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Row 5: ACCT, PAID, DUE */}
+                <div className="flex items-baseline justify-between pt-1 text-slate-700">
+                  <div className="flex items-baseline space-x-2 flex-1">
+                    <span className="font-bold shrink-0">ACCT.</span>
+                    <span className="border-b border-dotted border-slate-400 px-2 font-semibold text-slate-900 uppercase">
+                      {receiptData.paymentMethod || 'CASH'}
+                    </span>
+                  </div>
+                  <div className="flex items-baseline space-x-2 flex-1 justify-center">
+                    <span className="font-bold shrink-0">PAID</span>
+                    <span className="border-b border-dotted border-slate-400 px-2 font-bold text-emerald-700">
+                      {currency}
+                      {receiptData.amountPaid.toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="flex items-baseline space-x-2 flex-1 justify-end">
+                    <span className="font-bold shrink-0">DUE</span>
+                    <span className={`border-b border-dotted border-slate-400 px-2 font-bold ${
+                      remainingDebt > 0 ? 'text-rose-600' : 'text-slate-600'
+                    }`}>
+                      {currency}
+                      {remainingDebt.toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Voucher Signatures & Amount Box Footer */}
+              <div className="px-5 sm:px-8 pb-5 pt-2 flex items-end justify-between gap-3">
+                {/* Left: Boxed Amount */}
+                <div className="flex items-center space-x-2 shrink-0">
+                  <span className="font-black text-xs text-slate-700">Amount=</span>
+                  <div className="border-2 border-slate-400 bg-slate-50/90 px-3.5 py-1 rounded font-mono font-black text-sm sm:text-base text-slate-900 shadow-xs">
+                    {currency}
+                    {receiptData.grandTotal.toFixed(2)}
+                  </div>
+                </div>
+
+                {/* Center: Received by */}
+                <div className="text-center w-28 sm:w-36 shrink-0">
+                  <div className="border-b border-dotted border-slate-400 h-6 flex items-end justify-center pb-0.5 font-medium text-[11px] text-slate-700 truncate">
+                    {tenant?.name || 'Maraayn'}
+                  </div>
+                  <span className="text-[9px] sm:text-[10px] font-bold text-slate-500 uppercase tracking-wider block mt-1">
+                    Received by
+                  </span>
+                </div>
+
+                {/* Right: Authorized Signature */}
+                <div className="text-center w-32 sm:w-40 shrink-0">
+                  <div className="border-b border-dotted border-slate-400 h-6 flex items-end justify-center pb-0.5 font-mono text-[11px] text-slate-500 italic">
+                    Authorized
+                  </div>
+                  <span className="text-[9px] sm:text-[10px] font-bold text-slate-500 uppercase tracking-wider block mt-1">
+                    Authorized Signature
+                  </span>
+                </div>
+              </div>
+
+              {/* Bottom Decorative Geometric Ribbons (Amber & Navy Angles) */}
+              <div className="relative h-4 w-full bg-slate-50 overflow-hidden">
+                <div className="absolute bottom-0 left-0 h-2 w-1/3 bg-amber-500" />
+                <div
+                  className="absolute bottom-0 right-0 h-5 w-44 bg-amber-500"
+                  style={{ clipPath: 'polygon(15% 100%, 0% 0%, 100% 0%, 100% 100%)' }}
+                />
+                <div
+                  className="absolute bottom-0 right-0 h-5 w-32 bg-[#0f233a]"
+                  style={{ clipPath: 'polygon(20% 100%, 0% 0%, 100% 0%, 100% 100%)' }}
+                />
               </div>
             </div>
+          ) : (
+            /* ============================================================ */
+            /* 2. CLASSIC THERMAL SLIP (80mm) */
+            /* ============================================================ */
+            <div
+              id="printable-receipt"
+              ref={receiptRef}
+              className="w-full max-w-[320px] bg-white p-6 shadow-md rounded-lg font-mono text-xs text-slate-800 border border-slate-200 select-none"
+            >
+              {/* Business Logo & Header */}
+              <div className="text-center pb-3 border-b border-dashed border-slate-300">
+                {isVoided && (
+                  <div className="mb-2">
+                    <span className="inline-block px-3 py-1 bg-rose-100 border-2 border-rose-500 text-rose-700 font-black text-[11px] uppercase tracking-wider rounded-md rotate-[-2deg] shadow-xs">
+                      ⚠ KANSAL (VOIDED)
+                    </span>
+                  </div>
+                )}
+                <img
+                  src={tenant?.logoUrl || '/logo.png'}
+                  alt="Logo"
+                  crossOrigin="anonymous"
+                  className="h-10 mx-auto object-contain mb-2"
+                  onError={(e) => {
+                    (e.target as any).src = '/logo.png';
+                  }}
+                />
+                <h2 className="text-base font-extrabold uppercase text-slate-900 tracking-tight">
+                  {tenant?.name || 'Maraayn Business'}
+                </h2>
+                {tenant?.location && <p className="text-[11px] text-slate-600">{tenant.location}</p>}
+                {tenant?.ownerPhone && <p className="text-[11px] text-slate-600">Tel: {tenant.ownerPhone}</p>}
+                <p className="text-[10px] text-brand-amber font-semibold mt-1">
+                  Your Business, In One Place
+                </p>
+              </div>
 
-            {/* Footer */}
-            <div className="text-center pt-3 border-t border-dashed border-slate-300 text-[10px] text-slate-500 space-y-1">
-              <p className="font-medium text-slate-700">
-                {tenant?.receiptSettings?.footerMessage || 'Thank you for your business!'}
-              </p>
-              <p className="text-[9px] text-slate-400">Powered by Maraayn Management System</p>
+              {/* Receipt Meta */}
+              <div className="py-2.5 border-b border-dashed border-slate-300 space-y-1 text-[11px]">
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Receipt No:</span>
+                  <span className="font-bold text-slate-900">{receiptData.receiptNumber}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Date:</span>
+                  <span>{new Date(receiptData.createdAt || Date.now()).toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Customer:</span>
+                  <span className="font-semibold text-slate-900">
+                    {receiptData.customerName || 'Walk-in Customer'}
+                  </span>
+                </div>
+                {receiptData.customerPhone && (
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Phone:</span>
+                    <span className="font-mono">{receiptData.customerPhone}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Items Table */}
+              <div className="py-3 border-b border-dashed border-slate-300">
+                <div className="flex justify-between text-[11px] font-bold text-slate-700 pb-1.5 border-b border-slate-200">
+                  <span>Item</span>
+                  <div className="space-x-4">
+                    <span>Qty</span>
+                    <span>Total</span>
+                  </div>
+                </div>
+
+                <div className="divide-y divide-slate-100 py-1">
+                  {receiptData.items && receiptData.items.length > 0 ? (
+                    receiptData.items.map((item, idx) => (
+                      <div key={idx} className="flex justify-between py-1 text-[11px]">
+                        <span className="truncate max-w-[150px] font-medium">{item.productName}</span>
+                        <div className="space-x-4 text-right">
+                          <span className="text-slate-500">x{item.quantity || 1}</span>
+                          <span className="font-semibold">
+                            {currency}
+                            {item.total ?? item.unitPrice}
+                          </span>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="py-1 text-center text-slate-400">Standard Transaction</div>
+                  )}
+                </div>
+              </div>
+
+              {/* Calculations & Debt */}
+              <div className="py-2.5 space-y-1.5 text-[11px]">
+                <div className="flex justify-between text-slate-600">
+                  <span>Grand Total:</span>
+                  <span className="font-bold text-slate-900 text-xs">
+                    {currency}
+                    {receiptData.grandTotal}
+                  </span>
+                </div>
+                <div className="flex justify-between text-slate-600">
+                  <span>Amount Paid:</span>
+                  <span className="font-bold text-emerald-600">
+                    {currency}
+                    {receiptData.amountPaid}
+                  </span>
+                </div>
+
+                {isCredit && (
+                  <div className="flex justify-between py-1 px-2 bg-rose-50 rounded border border-rose-200 text-rose-700 font-bold">
+                    <span>Remaining Debt:</span>
+                    <span>
+                      {currency}
+                      {remainingDebt}
+                    </span>
+                  </div>
+                )}
+
+                <div className="flex justify-between text-slate-500 text-[10px] pt-1">
+                  <span>Payment Method:</span>
+                  <span className="uppercase font-semibold">{receiptData.paymentMethod || 'CASH'}</span>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="text-center pt-3 border-t border-dashed border-slate-300 text-[10px] text-slate-500 space-y-1">
+                <p className="font-medium text-slate-700">
+                  {tenant?.receiptSettings?.footerMessage || 'Thank you for your business!'}
+                </p>
+                <p className="text-[9px] text-slate-400">Powered by Maraayn Management System</p>
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Action Controls Section */}
-        <div className="p-4 bg-white border-t border-slate-100 flex flex-col gap-2.5">
+        <div className="p-3 sm:p-4 bg-white border-t border-slate-100 flex flex-col gap-2.5">
           {/* PRIMARY WHATSAPP ACTIONS (SAWIR & DOCUMENT) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {/* WhatsApp Share Real Image (Sawirka Dhabta Ah) */}
@@ -583,7 +865,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ isOpen, onClose, rec
             <button
               type="button"
               onClick={handlePrint}
-              className="flex-1 min-w-[90px] flex items-center justify-center space-x-1.5 bg-brand-navy hover:bg-brand-navy-light text-white font-semibold py-2 px-3 rounded-lg text-xs transition-colors"
+              className="flex-1 min-w-[90px] flex items-center justify-center space-x-1.5 bg-[#0f233a] hover:bg-[#1a3a60] text-white font-semibold py-2 px-3 rounded-lg text-xs transition-colors"
             >
               <Printer className="w-3.5 h-3.5" />
               <span>Print</span>
