@@ -32,9 +32,9 @@ export const AdminLayout: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-slate-50 flex flex-col md:flex-row font-sans">
+    <div className="h-screen h-[100dvh] w-full max-w-full overflow-hidden bg-slate-50 flex flex-col md:flex-row font-sans">
       {/* Mobile Top Header */}
-      <div className="md:hidden bg-brand-navy text-white px-4 py-3 flex items-center justify-between shadow-md z-30">
+      <div className="md:hidden bg-brand-navy text-white px-4 py-3 flex items-center justify-between shadow-md z-30 shrink-0">
         <div className="flex items-center space-x-3">
           <div className="bg-white px-2.5 py-1 rounded-xl shadow-sm flex items-center justify-center shrink-0">
             <img src="/logo.png" alt="Maraayn" className="h-7 object-contain" />
@@ -57,9 +57,9 @@ export const AdminLayout: React.FC = () => {
         />
       )}
 
-      {/* Admin Sidebar */}
+      {/* Admin Sidebar - Pure Flex on Desktop (md:static h-full), Fixed Drawer on Mobile */}
       <aside
-        className={`fixed md:sticky top-0 h-[100dvh] w-64 shrink-0 bg-brand-navy text-slate-300 flex flex-col z-40 transition-transform duration-300 ease-in-out ${
+        className={`fixed inset-y-0 left-0 md:static h-full w-64 shrink-0 bg-brand-navy text-slate-300 flex flex-col z-40 transition-transform duration-300 ease-in-out ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         }`}
       >
@@ -121,10 +121,10 @@ export const AdminLayout: React.FC = () => {
         </div>
       </aside>
 
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 w-full overflow-x-hidden overflow-y-auto min-h-screen">
+      {/* Main Content Area - Natural Flex Sibling with Independent Smooth Scroll */}
+      <div className="flex-1 h-full flex flex-col min-w-0 w-full overflow-y-auto overflow-x-hidden">
         {/* Top Navbar */}
-        <header className="hidden md:flex bg-white border-b border-slate-200 px-8 py-3.5 items-center justify-between sticky top-0 z-20 shadow-sm">
+        <header className="hidden md:flex bg-white border-b border-slate-200 px-8 py-3.5 items-center justify-between sticky top-0 z-20 shadow-sm shrink-0">
           <div>
             <h2 className="text-sm font-bold text-slate-800">Maraayn Central Platform Administration</h2>
             <p className="text-xs text-slate-500">Your Business, In One Place</p>
