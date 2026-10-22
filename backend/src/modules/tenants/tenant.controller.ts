@@ -60,7 +60,8 @@ export class TenantController {
   async getStorageUsage(@Req() req: any) {
     const tenant = req.tenant;
     const storage = await this.storageUsageModel.findOne({ tenantId: tenant._id }).exec();
-    const usedBytes = storage?.totalBytes || 0;
+    const fileBytes = storage?.files?.reduce((total, file) => total + (file.sizeBytes || 0), 0) || 0;
+    const usedBytes = Math.max(storage?.totalBytes || 0, fileBytes, tenant.storageUsedBytes || 0);
     const quotaBytes = tenant.storageQuotaBytes || 4 * 1024 * 1024 * 1024;
     const percentage = Number(((usedBytes / quotaBytes) * 100).toFixed(1));
 

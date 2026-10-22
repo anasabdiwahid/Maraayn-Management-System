@@ -17,6 +17,7 @@ import {
 import api from '../../api/client.js';
 import { useAuth } from '../../context/AuthContext.js';
 import { ReceiptModal } from '../../components/common/ReceiptModal.js';
+import { formatMoney } from '../../utils/format.js';
 
 export const PaymentsPage: React.FC = () => {
   const { tenant } = useAuth();
@@ -306,13 +307,13 @@ export const PaymentsPage: React.FC = () => {
                       <td className="py-3 px-4 font-extrabold text-sm whitespace-nowrap">
                         {isCancelled ? (
                           <div className="flex items-center space-x-1 text-rose-500 line-through">
-                            <span>+{currency}{p.amount}</span>
+                            <span>+{currency}{formatMoney(p.amount)}</span>
                             <span className="text-[10px] bg-rose-100 px-1.5 py-0.2 rounded font-black no-underline">
                               KANSAL
                             </span>
                           </div>
                         ) : (
-                          <span className="text-emerald-600">+{currency}{p.amount}</span>
+                          <span className="text-emerald-600">+{currency}{formatMoney(p.amount)}</span>
                         )}
                       </td>
 

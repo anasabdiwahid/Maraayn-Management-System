@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import api from '../../api/client.js';
 import { useAuth } from '../../context/AuthContext.js';
+import { formatMoney } from '../../utils/format.js';
 
 export const BusinessReportsPage: React.FC = () => {
   const { tenant } = useAuth();
@@ -193,9 +194,9 @@ export const BusinessReportsPage: React.FC = () => {
                             {item.saleType}
                           </span>
                         </td>
-                        <td className="py-2.5 px-3 font-bold">{currency}{item.grandTotal}</td>
-                        <td className="py-2.5 px-3 text-emerald-600 font-semibold">{currency}{item.amountPaid}</td>
-                        <td className="py-2.5 px-3 text-rose-600 font-bold">{item.balanceDue > 0 ? `${currency}${item.balanceDue}` : '-'}</td>
+                        <td className="py-2.5 px-3 font-bold">{currency}{formatMoney(item.grandTotal)}</td>
+                        <td className="py-2.5 px-3 text-emerald-600 font-semibold">{currency}{formatMoney(item.amountPaid)}</td>
+                        <td className="py-2.5 px-3 text-rose-600 font-bold">{item.balanceDue > 0 ? `${currency}${formatMoney(item.balanceDue)}` : '-'}</td>
                       </>
                     )}
                     {reportType === 'inventory' && (
@@ -203,10 +204,10 @@ export const BusinessReportsPage: React.FC = () => {
                         <td className="py-2.5 px-3 font-bold">{item.name}</td>
                         <td className="py-2.5 px-3 font-mono text-slate-500">{item.sku}</td>
                         <td className="py-2.5 px-3 font-bold">{item.currentQuantity} {item.unit}</td>
-                        <td className="py-2.5 px-3 text-slate-600">{currency}{item.purchaseCost}</td>
-                        <td className="py-2.5 px-3 text-slate-900 font-bold">{currency}{item.sellingPrice}</td>
+                        <td className="py-2.5 px-3 text-slate-600">{currency}{formatMoney(item.purchaseCost)}</td>
+                        <td className="py-2.5 px-3 text-slate-900 font-bold">{currency}{formatMoney(item.sellingPrice)}</td>
                         <td className="py-2.5 px-3 font-extrabold text-brand-navy">
-                          {currency}{(item.currentQuantity * item.purchaseCost).toFixed(2)}
+                          {currency}{formatMoney(item.currentQuantity * item.purchaseCost)}
                         </td>
                       </>
                     )}
@@ -215,9 +216,9 @@ export const BusinessReportsPage: React.FC = () => {
                         <td className="py-2.5 px-3 font-mono font-bold">{item.debtNumber}</td>
                         <td className="py-2.5 px-3 font-semibold">{item.customerId?.name || 'Customer'}</td>
                         <td className="py-2.5 px-3 text-slate-500">{new Date(item.saleDate).toLocaleDateString()}</td>
-                        <td className="py-2.5 px-3 font-bold">{currency}{item.totalSaleAmount}</td>
-                        <td className="py-2.5 px-3 text-emerald-600 font-semibold">{currency}{item.amountRepaid + (item.initialPayment || 0)}</td>
-                        <td className="py-2.5 px-3 font-extrabold text-rose-600">{currency}{item.remainingBalance}</td>
+                        <td className="py-2.5 px-3 font-bold">{currency}{formatMoney(item.totalSaleAmount)}</td>
+                        <td className="py-2.5 px-3 text-emerald-600 font-semibold">{currency}{formatMoney(item.amountRepaid + (item.initialPayment || 0))}</td>
+                        <td className="py-2.5 px-3 font-extrabold text-rose-600">{currency}{formatMoney(item.remainingBalance)}</td>
                         <td className="py-2.5 px-3 text-slate-500">{item.dueDate ? new Date(item.dueDate).toLocaleDateString() : '-'}</td>
                       </>
                     )}
@@ -227,7 +228,7 @@ export const BusinessReportsPage: React.FC = () => {
                         <td className="py-2.5 px-3">{item.category}</td>
                         <td className="py-2.5 px-3 text-slate-500">{new Date(item.expenseDate).toLocaleDateString()}</td>
                         <td className="py-2.5 px-3 font-mono">{item.paymentMethod}</td>
-                        <td className="py-2.5 px-3 font-extrabold text-rose-600">-{currency}{item.amount}</td>
+                        <td className="py-2.5 px-3 font-extrabold text-rose-600">-{currency}{formatMoney(item.amount)}</td>
                       </>
                     )}
                   </tr>

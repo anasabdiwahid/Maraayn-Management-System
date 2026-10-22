@@ -9,12 +9,12 @@ export default {
     extend: {
       colors: {
         brand: {
-          navy: '#142746',
-          'navy-dark': '#0E1C33',
-          'navy-light': '#1E3A66',
-          amber: '#E6AE43',
-          'amber-light': '#F8C76A',
-          'amber-dark': '#C99228',
+          navy: 'rgb(var(--brand-navy, 20 39 70) / <alpha-value>)',
+          'navy-dark': 'rgb(var(--brand-navy, 20 39 70) / <alpha-value>)',
+          'navy-light': 'rgb(var(--brand-navy, 20 39 70) / <alpha-value>)',
+          amber: 'rgb(var(--brand-amber, 230 174 67) / <alpha-value>)',
+          'amber-light': 'rgb(var(--brand-amber, 230 174 67) / <alpha-value>)',
+          'amber-dark': 'rgb(var(--brand-amber, 230 174 67) / <alpha-value>)',
           pink: '#E11D8A',
           bg: '#F5F7FB',
           card: '#FFFFFF',

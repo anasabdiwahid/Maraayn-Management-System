@@ -12,12 +12,21 @@ import {
   Calendar,
   AlertCircle,
   CheckCircle2,
+  LayoutGrid,
+  Tag,
+  Coffee,
+  Soup,
+  CakeSlice,
+  Cookie,
+  CupSoda,
+  Package,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import api from '../../api/client.js';
+import api, { resolveApiAssetUrl } from '../../api/client.js';
 import { useAuth } from '../../context/AuthContext.js';
 import { Product, Customer } from '../../types/index.js';
 import { ReceiptModal } from '../../components/common/ReceiptModal.js';
+import { formatMoney } from '../../utils/format.js';
 
 interface CartItem {
   product: Product;
@@ -77,6 +86,16 @@ export const NewSalePage: React.FC = () => {
   });
 
   const categories = ['ALL', ...Array.from(new Set(products.map((p) => p.category)))];
+  const getCategoryIcon = (category: string) => {
+    const normalized = category.toLowerCase();
+    if (category === 'ALL') return LayoutGrid;
+    if (normalized.includes('drink') || normalized.includes('beverage') || normalized.includes('cabitaan')) return CupSoda;
+    if (normalized.includes('dessert') || normalized.includes('macmacaan')) return CakeSlice;
+    if (normalized.includes('snack') || normalized.includes('cunto fudud')) return Cookie;
+    if (normalized.includes('starter') || normalized.includes('soup')) return Soup;
+    if (normalized.includes('coffee') || normalized.includes('shaah')) return Coffee;
+    return Tag;
+  };
 
   const addToCart = (product: Product) => {
     if (product.currentQuantity <= 0) {
@@ -261,12 +280,12 @@ export const NewSalePage: React.FC = () => {
   return (
     <div className="space-y-4">
       {/* Page Title */}
-      <div className="flex items-center justify-between">
+      <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm before:absolute before:inset-y-0 before:left-0 before:w-1.5 before:bg-brand-amber">
         <div>
-          <h1 className="text-xl font-extrabold text-[#142746] tracking-tight">
+          <h1 className="text-xl font-extrabold text-brand-navy tracking-tight">
             New Sale (Point of Sale — POS)
           </h1>
-          <p className="text-[11px] text-slate-500 mt-0.5">
+          <p className="text-[11px] text-slate-500 mt-1">
             Select products, choose payment terms (Cash or Credit), and issue receipts
           </p>
         </div>
@@ -277,68 +296,100 @@ export const NewSalePage: React.FC = () => {
         {/* Left Side: Product Catalog (7 cols) */}
         <div className="lg:col-span-7 space-y-3">
           {/* Search & Category Pills */}
-          <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-xs space-y-2.5">
+          <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3">
             <div className="relative">
-              <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
+              <Search className="w-4 h-4 absolute left-3.5 top-3 text-slate-400" />
               <input
                 type="text"
                 placeholder="Search product name, SKU, or barcode (scanner supported)..."
                 value={searchProduct}
                 onChange={(e) => setSearchProduct(e.target.value)}
-                className="w-full pl-9 pr-4 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-brand-amber focus:bg-white"
+                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs transition focus:outline-none focus:ring-2 focus:ring-brand-amber focus:bg-white"
               />
             </div>
 
-            {/* Category Filter Pills */}
-            <div className="flex gap-1.5 overflow-x-auto pb-0.5 text-[11px] font-semibold text-slate-600">
+            {/* Category tiles */}
+            <div className="flex gap-2 overflow-x-auto pb-1 text-[10px] font-semibold text-slate-600">
               {categories.map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => setSelectedCategory(cat)}
-                  className={`px-2.5 py-1 rounded-md shrink-0 transition-colors ${
-                    selectedCategory === cat
-                      ? 'bg-brand-navy text-white font-bold'
-                      : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
-                  }`}
-                >
-                  {cat}
-                </button>
+                (() => {
+                  const CategoryIcon = getCategoryIcon(cat);
+                  const selected = selectedCategory === cat;
+                  return (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => setSelectedCategory(cat)}
+                      className={`flex min-w-[62px] shrink-0 flex-col items-center gap-1.5 rounded-xl border px-3 py-2 transition-all ${
+                        selected
+                          ? 'border-brand-amber bg-amber-50 text-brand-navy shadow-sm'
+                          : 'border-slate-100 bg-slate-50 text-slate-500 hover:border-slate-200 hover:bg-white'
+                      }`}
+                    >
+                      <CategoryIcon className="h-4 w-4" />
+                      <span className="max-w-24 truncate">{cat === 'ALL' ? 'Dhammaan' : cat}</span>
+                    </button>
+                  );
+                })()
               ))}
             </div>
           </div>
 
           {/* Product Items Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 max-h-[580px] overflow-y-auto pr-1">
+          <div className="mb-2 flex items-center justify-between px-1">
+            <div>
+              <h2 className="text-sm font-extrabold text-slate-800">Alaabta la heli karo</h2>
+              <p className="mt-0.5 text-[10px] text-slate-400">Taabo alaabta si aad ugu darto iibka</p>
+            </div>
+            <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-bold text-slate-500 shadow-sm">{filteredProducts.length} alaab</span>
+          </div>
+          <div className="grid max-h-[680px] grid-cols-2 gap-2.5 overflow-y-auto pr-1 pb-1 sm:grid-cols-3 xl:grid-cols-4">
             {filteredProducts.map((p) => {
               const inStock = p.currentQuantity > 0;
               return (
                 <div
                   key={p._id}
                   onClick={() => inStock && addToCart(p)}
-                  className={`p-3 rounded-xl border transition-all text-left flex flex-col justify-between ${
+                  role="button"
+                  tabIndex={inStock ? 0 : -1}
+                  onKeyDown={(event) => {
+                    if (inStock && (event.key === 'Enter' || event.key === ' ')) {
+                      event.preventDefault();
+                      addToCart(p);
+                    }
+                  }}
+                  aria-label={`${p.name}, ${currency}${formatMoney(p.sellingPrice)}. Ku dar iibka.`}
+                  className={`group overflow-hidden rounded-2xl border bg-white text-left transition-all duration-200 ${
                     inStock
-                      ? 'bg-white border-slate-200 hover:border-brand-amber hover:shadow-sm cursor-pointer'
+                      ? 'border-slate-200 hover:-translate-y-0.5 hover:border-brand-amber hover:shadow-md cursor-pointer'
                       : 'bg-slate-50 border-slate-200 opacity-60 cursor-not-allowed'
                   }`}
                 >
-                  <div>
-                    <span className="text-[10px] font-mono font-semibold text-slate-400 block truncate">
-                      {p.sku}
+                  <div className="relative flex h-20 items-center justify-center overflow-hidden bg-slate-50 sm:h-24">
+                    {p.imageUrl ? (
+                      <img
+                        src={resolveApiAssetUrl(p.imageUrl)}
+                        alt={p.name}
+                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-brand-navy shadow-sm">
+                        <Package className="h-5 w-5" />
+                      </div>
+                    )}
+                    <span className={`absolute right-2 top-2 rounded-full px-2 py-1 text-[9px] font-bold shadow-sm ${inStock ? 'bg-white/95 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
+                      {inStock ? `${p.currentQuantity} ${p.unit}` : 'Ma jiro'}
                     </span>
-                    <h4 className="font-bold text-xs text-slate-900 line-clamp-2 mt-0.5">{p.name}</h4>
                   </div>
-
-                  <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between">
-                    <span className="text-xs font-black text-[#142746]">
-                      {currency}{p.sellingPrice}
-                    </span>
-                    <span
-                      className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
-                        inStock ? 'bg-slate-100 text-slate-700' : 'bg-rose-100 text-rose-700'
-                      }`}
-                    >
-                      {inStock ? `${p.currentQuantity} ${p.unit}` : 'Out of Stock'}
-                    </span>
+                  <div className="p-2.5 sm:p-3">
+                    <span className="block truncate text-[8px] font-mono font-semibold uppercase tracking-wide text-slate-400">{p.sku}</span>
+                    <h4 className="mt-0.5 min-h-8 line-clamp-2 text-[11px] font-bold leading-4 text-slate-800 group-hover:text-brand-navy">{p.name}</h4>
+                    <div className="mt-2 flex items-center justify-between gap-1 border-t border-slate-100 pt-2">
+                      <span className="text-xs font-black text-brand-navy">{currency}{formatMoney(p.sellingPrice)}</span>
+                      <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-[9px] font-bold ${inStock ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-400'}`}>
+                        <Plus className="h-3 w-3" /> Ku dar
+                      </span>
+                    </div>
                   </div>
                 </div>
               );
@@ -347,11 +398,13 @@ export const NewSalePage: React.FC = () => {
         </div>
 
         {/* Right Side: Cart, Customer Picker & Payment (5 cols) */}
-        <div className="lg:col-span-5 bg-white rounded-xl border border-slate-200 shadow-xs p-4 space-y-3">
-          <div className="flex items-center justify-between border-b pb-2.5">
+        <div className="lg:col-span-5 lg:sticky lg:top-4 bg-white rounded-2xl border border-slate-200 shadow-sm p-4 space-y-3">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <div className="flex items-center space-x-2">
-              <ShoppingCart className="w-4 h-4 text-brand-navy" />
-              <h3 className="font-extrabold text-xs sm:text-sm text-slate-900">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-navy/5">
+                <ShoppingCart className="w-4 h-4 text-brand-navy" />
+              </div>
+              <h3 className="font-extrabold text-sm text-slate-900">
                 Cart ({cart.reduce((a, b) => a + b.quantity, 0)})
               </h3>
             </div>
@@ -366,10 +419,14 @@ export const NewSalePage: React.FC = () => {
           </div>
 
           {/* Cart Items List */}
-          <div className="max-h-56 overflow-y-auto divide-y divide-slate-100 text-xs">
+          <div className="max-h-64 overflow-y-auto divide-y divide-slate-100 text-xs">
             {cart.length === 0 ? (
-              <div className="py-12 text-center text-slate-400">
-                Cart is empty. Select products on the left to add items.
+              <div className="flex min-h-40 flex-col items-center justify-center px-5 py-8 text-center">
+                <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
+                  <ShoppingCart className="h-5 w-5" />
+                </div>
+                <p className="text-xs font-bold text-slate-600">Cart is empty</p>
+                <p className="mt-1 max-w-[220px] text-[11px] leading-relaxed text-slate-400">Select products on the left to add items to this sale.</p>
               </div>
             ) : (
               cart.map((item) => (
@@ -377,7 +434,7 @@ export const NewSalePage: React.FC = () => {
                   <div className="min-w-0 flex-1 pr-2">
                     <h5 className="font-bold text-slate-800 truncate">{item.product.name}</h5>
                     <p className="text-[10px] text-slate-500">
-                      {currency}{item.unitPrice} / {item.product.unit}
+                      {currency}{formatMoney(item.unitPrice)} / {item.product.unit}
                     </p>
                   </div>
 
@@ -399,7 +456,7 @@ export const NewSalePage: React.FC = () => {
                   </div>
 
                   <div className="w-16 text-right font-bold text-slate-900 shrink-0 ml-2">
-                    {currency}{item.total}
+                    {currency}{formatMoney(item.total)}
                   </div>
 
                   <button
@@ -414,9 +471,9 @@ export const NewSalePage: React.FC = () => {
           </div>
 
           {/* Sale Type Selector (Cash vs Credit) */}
-          <div className="pt-2 border-t border-slate-100">
-            <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">
-              Sale Type
+          <div className="pt-3 border-t border-slate-100">
+            <label className="block text-[10px] font-extrabold uppercase tracking-[0.14em] text-slate-500 mb-2">
+              Nooca Iibka
             </label>
             <div className="grid grid-cols-2 gap-2 text-xs">
               <button
@@ -429,7 +486,7 @@ export const NewSalePage: React.FC = () => {
                 }`}
               >
                 <Banknote className="w-4 h-4" />
-                <span>Cash Sale</span>
+                <span>Lacag Caddaan</span>
               </button>
 
               <button
@@ -442,9 +499,14 @@ export const NewSalePage: React.FC = () => {
                 }`}
               >
                 <CreditCard className="w-4 h-4" />
-                <span>Credit Sale</span>
+                <span>Dayn</span>
               </button>
             </div>
+            {saleType === 'CREDIT_SALE' && (
+              <p className="mt-2 rounded-lg bg-amber-50 px-2.5 py-2 text-[11px] font-medium text-amber-900">
+                Iibkan dayn ayuu noqonayaa markaad xaqiijiso. Alaabta kaydka waa laga jarayaa, dayntana macmiilka ayaa loo diiwaangelinayaa.
+              </p>
+            )}
           </div>
 
           {/* Customer Selection & Direct Name/Phone Input */}
@@ -558,7 +620,7 @@ export const NewSalePage: React.FC = () => {
 
           {/* Payment Method Selector */}
           <div className="text-xs">
-            <label className="block font-bold text-slate-700 mb-1">Payment Method</label>
+            <label className="block font-bold text-slate-700 mb-1.5">Payment Method</label>
             <select
               value={paymentMethod}
               onChange={(e) => setPaymentMethod(e.target.value as any)}
@@ -572,19 +634,19 @@ export const NewSalePage: React.FC = () => {
           </div>
 
           {/* Totals Summary */}
-          <div className="pt-3 border-t border-slate-100 space-y-1.5 text-xs">
+          <div className="rounded-xl bg-slate-50 p-3 border border-slate-100 space-y-2 text-xs">
             <div className="flex justify-between text-slate-600">
-              <span>Grand Total:</span>
-              <span className="text-base font-extrabold text-[#142746]">{currency}{grandTotal}</span>
+              <span>Wadarta Guud:</span>
+              <span className="text-base font-extrabold text-brand-navy">{currency}{formatMoney(grandTotal)}</span>
             </div>
             <div className="flex justify-between text-slate-600">
-              <span>Paid Now:</span>
-              <span className="font-bold text-emerald-600">{currency}{amountPaid}</span>
+              <span>Hadda La Bixiyay:</span>
+              <span className="font-bold text-emerald-600">{currency}{formatMoney(amountPaid)}</span>
             </div>
             {saleType === 'CREDIT_SALE' && remainingBalance > 0 && (
-              <div className="flex justify-between font-bold text-rose-600">
-                <span>Remaining Debt:</span>
-                <span>{currency}{remainingBalance}</span>
+              <div className="flex justify-between border-t border-slate-200 pt-2 font-bold text-rose-600">
+                <span>Daynta Hadhay:</span>
+                <span>{currency}{formatMoney(remainingBalance)}</span>
               </div>
             )}
           </div>
@@ -626,15 +688,15 @@ export const NewSalePage: React.FC = () => {
           <button
             onClick={handleCompleteSale}
             disabled={submitting || cart.length === 0}
-            className="w-full py-3 bg-[#E6AE43] hover:bg-[#F8C76A] text-[#142746] font-extrabold text-sm rounded-xl shadow-md transition-all flex items-center justify-center space-x-2 disabled:opacity-50 cursor-pointer"
+            className="w-full py-3 bg-brand-amber hover:brightness-95 active:scale-[0.99] text-brand-navy font-extrabold text-sm rounded-xl shadow-md shadow-brand-amber/20 transition-all flex items-center justify-center space-x-2 disabled:opacity-50 cursor-pointer"
           >
             {submitting ? (
-              <span>Processing sale...</span>
+              <span>Waa la diiwaangelinayaa...</span>
             ) : (
               <>
                 <CheckCircle2 className="w-5 h-5" />
                 <span>
-                  {saleType === 'CREDIT_SALE' ? 'Confirm Credit Sale' : 'Complete Sale'}
+                  {saleType === 'CREDIT_SALE' ? 'Xaqiiji oo Diiwaangeli Daynta' : 'Dhammee Iibka'}
                 </span>
               </>
             )}

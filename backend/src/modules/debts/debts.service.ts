@@ -31,7 +31,7 @@ export class DebtsService {
     const debts = await this.debtModel
       .find(filter)
       .populate('customerId', 'name phone email code currentDebtBalance')
-      .populate('saleId', 'saleNumber grandTotal amountPaid items createdAt')
+      .populate('saleId', 'saleNumber receiptNumber saleType customerName customerPhone grandTotal amountPaid balanceDue paymentMethod notes items createdAt')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)

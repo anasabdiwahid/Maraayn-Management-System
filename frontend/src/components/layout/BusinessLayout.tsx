@@ -17,6 +17,7 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.js';
+import { resolveApiAssetUrl } from '../../api/client.js';
 import { StorageMeter } from '../common/StorageMeter.js';
 import { NotificationsDropdown } from '../common/NotificationsDropdown.js';
 
@@ -25,6 +26,14 @@ export const BusinessLayout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const isSuspended = tenant?.status === 'SUSPENDED';
+  const toRgbChannels = (hex: string | undefined, fallback: string) => {
+    const value = /^#[0-9a-f]{6}$/i.test(hex || '') ? hex!.slice(1) : fallback.slice(1);
+    return `${parseInt(value.slice(0, 2), 16)} ${parseInt(value.slice(2, 4), 16)} ${parseInt(value.slice(4, 6), 16)}`;
+  };
+  const brandStyles = {
+    '--brand-navy': toRgbChannels(tenant?.primaryColor, '#142746'),
+    '--brand-amber': toRgbChannels(tenant?.accentColor, '#E6AE43'),
+  } as React.CSSProperties;
 
   const navItems = [
     { name: 'Dashboard', path: '/business', icon: LayoutDashboard },
@@ -40,13 +49,13 @@ export const BusinessLayout: React.FC = () => {
   ];
 
   return (
-    <div className="h-screen h-[100dvh] w-full max-w-full overflow-hidden bg-brand-bg flex flex-col md:flex-row font-sans">
+    <div style={brandStyles} className="h-screen h-[100dvh] w-full max-w-full overflow-hidden bg-brand-bg flex flex-col md:flex-row font-sans">
       {/* Mobile Header */}
       <div className="md:hidden bg-brand-navy text-white px-4 py-3 flex items-center justify-between shadow-md z-30 shrink-0">
         <div className="flex items-center space-x-3">
           <div className="bg-white px-2.5 py-1 rounded-xl shadow-sm flex items-center justify-center shrink-0">
             <img
-              src={tenant?.logoUrl || '/logo.png'}
+              src={resolveApiAssetUrl(tenant?.logoUrl)}
               alt="Logo"
               className="h-7 max-w-[110px] object-contain"
               onError={(e) => {
@@ -86,7 +95,7 @@ export const BusinessLayout: React.FC = () => {
         <div className="p-5 border-b border-slate-700/60 flex items-center space-x-3">
           <div className="bg-white px-2.5 py-1.5 rounded-xl shadow-sm flex items-center justify-center shrink-0">
             <img
-              src={tenant?.logoUrl || '/logo.png'}
+              src={resolveApiAssetUrl(tenant?.logoUrl)}
               alt={tenant?.name}
               className="h-8 max-w-[110px] object-contain"
               onError={(e) => {

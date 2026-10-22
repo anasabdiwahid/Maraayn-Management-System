@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Settings,
   HardDrive,
@@ -10,18 +10,28 @@ import {
   Upload,
   Plus,
 } from 'lucide-react';
-import api from '../../api/client.js';
+import api, { resolveApiAssetUrl } from '../../api/client.js';
 import { useAuth } from '../../context/AuthContext.js';
 import { StorageMeter } from '../../components/common/StorageMeter.js';
+
+const formatStorageBytes = (bytes: number = 0) => {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+  return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+};
 
 export const BusinessSettingsPage: React.FC = () => {
   const { tenant, updateTenantData } = useAuth();
   const [activeTab, setActiveTab] = useState<'profile' | 'receipt' | 'storage' | 'staff'>('profile');
   const [loading, setLoading] = useState(false);
+  const [logoLoading, setLogoLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   // Storage info
   const [storageData, setStorageData] = useState<any>(null);
+  const logoInputRef = useRef<HTMLInputElement>(null);
 
   // Staff info
   const [staffList, setStaffList] = useState<any[]>([]);
@@ -53,16 +63,33 @@ export const BusinessSettingsPage: React.FC = () => {
   });
 
   useEffect(() => {
-    // Load storage meter
-    api.get('/tenant/storage').then((res) => setStorageData(res.data));
-    // Load staff
     api.get('/tenant/staff').then((res) => setStaffList(res.data || []));
   }, []);
 
+  useEffect(() => {
+    if (activeTab !== 'storage') return;
+    let isCurrent = true;
+    api.get('/tenant/storage')
+      .then((res) => {
+        if (isCurrent) setStorageData(res.data);
+      })
+      .catch((err) => {
+        if (isCurrent) setErrorMessage(err.response?.data?.message || 'Xogta kaydka lama soo akhrin karin.');
+      });
+    return () => {
+      isCurrent = false;
+    };
+  }, [activeTab]);
+
   const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (![formData.primaryColor, formData.accentColor].every((color) => /^#[0-9a-f]{6}$/i.test(color))) {
+      setErrorMessage('Labada midab waa inay ahaadaan HEX sax ah, tusaale #142746.');
+      return;
+    }
     setLoading(true);
     setSuccess(false);
+    setErrorMessage('');
 
     try {
       const res = await api.patch('/tenant/settings', formData);
@@ -70,21 +97,58 @@ export const BusinessSettingsPage: React.FC = () => {
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Error updating settings');
+      setErrorMessage(err.response?.data?.message || 'Dejinta lama kaydin karin.');
     } finally {
       setLoading(false);
     }
   };
 
+  const handleLogoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) {
+      setErrorMessage('Fadlan dooro sawir PNG, JPG ama WebP ah.');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setErrorMessage('Logo-gu waa inuu ka yaraadaa 5 MB.');
+      return;
+    }
+
+    setErrorMessage('');
+    setLogoLoading(true);
+    try {
+      const uploadData = new FormData();
+      uploadData.append('file', file);
+      // StorageUsage only accepts the category value "logo" for business logos.
+      uploadData.append('category', 'logo');
+      const res = await api.post('/storage/upload', uploadData);
+      setFormData((current) => ({ ...current, logoUrl: res.data.url }));
+      setStorageData((current: any) => ({
+        ...current,
+        usedBytes: res.data.storageUsedBytes,
+        quotaBytes: res.data.quotaBytes,
+        percentage: res.data.percentage,
+      }));
+      setSuccess(false);
+    } catch (err: any) {
+      setErrorMessage(err.response?.data?.message || 'Logo-ga lama gelin karin.');
+    } finally {
+      setLogoLoading(false);
+    }
+  };
+
   const handleAddStaff = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMessage('');
     try {
       await api.post('/tenant/staff', staffForm);
       setStaffModalOpen(false);
       setStaffForm({ name: '', email: '', phone: '', password: '', businessRole: 'CASHIER' });
       api.get('/tenant/staff').then((res) => setStaffList(res.data || []));
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Error adding staff');
+      setErrorMessage(err.response?.data?.message || 'Shaqaalaha lama dari karin.');
     }
   };
 
@@ -104,6 +168,14 @@ export const BusinessSettingsPage: React.FC = () => {
         <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center space-x-2">
           <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
           <span>Settings saved successfully!</span>
+        </div>
+      )}
+
+      {errorMessage && (
+        <div role="alert" className="flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 p-4 text-xs text-rose-800">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-rose-600" />
+          <span className="flex-1">{errorMessage}</span>
+          <button type="button" onClick={() => setErrorMessage('')} className="font-bold text-rose-700 hover:text-rose-900">Xir</button>
         </div>
       )}
 
@@ -175,6 +247,23 @@ export const BusinessSettingsPage: React.FC = () => {
                 placeholder="Suite 104, Business Center..."
                 className="w-full p-2.5 bg-slate-50 border rounded-xl"
               />
+            </div>
+          </div>
+
+          <div className="pt-4 border-t border-slate-100">
+            <h4 className="font-bold text-slate-800 uppercase tracking-wider text-[11px] mb-3">Logo-ga Dukaanka</h4>
+            <div className="flex items-center gap-4">
+              <div className="w-20 h-20 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-center p-2">
+                <img src={resolveApiAssetUrl(formData.logoUrl)} alt="Logo-ga dukaanka" className="max-w-full max-h-full object-contain" />
+              </div>
+              <div className="space-y-2">
+                <input ref={logoInputRef} type="file" accept="image/png,image/jpeg,image/webp" onChange={handleLogoChange} className="hidden" />
+                <button type="button" onClick={() => logoInputRef.current?.click()} disabled={logoLoading} className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl disabled:opacity-50">
+                  <Upload className="w-4 h-4" />
+                  {logoLoading ? 'Logo-ga waa la gelinayaa...' : 'Dooro Logo'}
+                </button>
+                <p className="text-[10px] text-slate-500">PNG, JPG ama WebP; ugu badnaan 5 MB. Riix Save Settings si loo dhaqan geliyo.</p>
+              </div>
             </div>
           </div>
 
@@ -301,9 +390,31 @@ export const BusinessSettingsPage: React.FC = () => {
       {activeTab === 'storage' && (
         <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
           <StorageMeter
-            usedBytes={storageData?.usedBytes || tenant?.storageUsedBytes || 0}
-            quotaBytes={storageData?.quotaBytes || tenant?.storageQuotaBytes || 4 * 1024 * 1024 * 1024}
+            usedBytes={storageData?.usedBytes ?? tenant?.storageUsedBytes ?? 0}
+            quotaBytes={storageData?.quotaBytes ?? tenant?.storageQuotaBytes ?? 4 * 1024 * 1024 * 1024}
           />
+
+          <div className="overflow-hidden rounded-xl border border-slate-200">
+            <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50 px-4 py-3">
+              <h4 className="text-xs font-bold text-slate-800">Faylasha kaydsan</h4>
+              <span className="text-[10px] font-semibold text-slate-500">{storageData?.files?.length || 0} fayl</span>
+            </div>
+            {storageData?.files?.length ? (
+              <div className="divide-y divide-slate-100">
+                {storageData.files.map((file: any) => (
+                  <div key={file.fileKey} className="flex items-center justify-between gap-3 px-4 py-2.5 text-xs">
+                    <div className="min-w-0">
+                      <p className="truncate font-semibold text-slate-700">{file.originalName}</p>
+                      <p className="mt-0.5 text-[10px] capitalize text-slate-400">{file.category}</p>
+                    </div>
+                    <span className="shrink-0 font-mono font-semibold text-slate-500">{formatStorageBytes(file.sizeBytes)}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="px-4 py-4 text-xs text-slate-500">Weli wax faylal ah laguma kaydin dukaankan.</p>
+            )}
+          </div>
 
           <div className="p-4 bg-slate-50 rounded-xl text-xs space-y-2 border border-slate-200">
             <h4 className="font-bold text-slate-800">Storage Quota Policy:</h4>

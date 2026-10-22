@@ -10,7 +10,19 @@ interface StorageMeterProps {
 export const StorageMeter: React.FC<StorageMeterProps> = ({ usedBytes, quotaBytes, compact = false }) => {
   const usedGb = usedBytes / (1024 * 1024 * 1024);
   const quotaGb = quotaBytes / (1024 * 1024 * 1024);
-  const percentage = quotaBytes > 0 ? Math.min(100, Math.round((usedBytes / quotaBytes) * 100)) : 0;
+  const percentage = quotaBytes > 0 ? Math.min(100, (usedBytes / quotaBytes) * 100) : 0;
+  const percentageLabel = percentage === 0
+    ? '0%'
+    : percentage < 0.01
+      ? '<0.01%'
+      : `${percentage < 1 ? percentage.toFixed(2) : Math.round(percentage)}%`;
+  const usedLabel = usedGb >= 1
+    ? `${usedGb.toFixed(2)} GB`
+    : usedBytes >= 1024 * 1024
+      ? `${(usedBytes / (1024 * 1024)).toFixed(2)} MB`
+      : usedBytes >= 1024
+        ? `${(usedBytes / 1024).toFixed(1)} KB`
+        : `${usedBytes} B`;
 
   const isNearLimit = percentage >= 80 && percentage < 95;
   const isCritical = percentage >= 95;
@@ -29,7 +41,7 @@ export const StorageMeter: React.FC<StorageMeterProps> = ({ usedBytes, quotaByte
         <div className="w-16 bg-slate-200 h-1.5 rounded-full overflow-hidden">
           <div className={`h-full ${barColor}`} style={{ width: `${percentage}%` }} />
         </div>
-        <span className="font-medium text-slate-600">{percentage}%</span>
+        <span className="font-medium text-slate-600">{percentageLabel}</span>
       </div>
     );
   }
@@ -50,15 +62,15 @@ export const StorageMeter: React.FC<StorageMeterProps> = ({ usedBytes, quotaByte
 
       <div className="flex items-baseline justify-between mb-1.5">
         <span className="text-sm font-bold text-slate-900">
-          {usedGb >= 1 ? `${usedGb.toFixed(2)} GB` : `${(usedGb * 1024).toFixed(0)} MB`}
+          {usedLabel}
         </span>
-        <span className="text-xs text-slate-500">of {quotaGb.toFixed(1)} GB ({percentage}%)</span>
+        <span className="text-xs text-slate-500">of {quotaGb.toFixed(1)} GB ({percentageLabel})</span>
       </div>
 
       <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
         <div
           className={`h-full transition-all duration-500 ${barColor}`}
-          style={{ width: `${percentage}%` }}
+          style={{ width: `${usedBytes > 0 ? Math.max(percentage, 0.1) : 0}%` }}
         />
       </div>
 

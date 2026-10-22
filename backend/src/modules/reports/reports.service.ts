@@ -7,7 +7,7 @@ import { Customer, CustomerDocument } from '../../schemas/customer.schema.js';
 import { Debt, DebtDocument } from '../../schemas/debt.schema.js';
 import { Payment, PaymentDocument } from '../../schemas/payment.schema.js';
 import { Expense, ExpenseDocument } from '../../schemas/expense.schema.js';
-import { DebtStatus } from '../../common/constants/roles.enum.js';
+import { DebtStatus, SaleType } from '../../common/constants/roles.enum.js';
 
 @Injectable()
 export class ReportsService {
@@ -51,8 +51,10 @@ export class ReportsService {
     const products = await this.productModel.find({ tenantId, status: 'ACTIVE' }).exec();
     const totalProducts = products.length;
     let totalInventoryValue = 0;
+    let totalStockQuantity = 0;
     products.forEach((p) => {
       totalInventoryValue += (p.currentQuantity || 0) * (p.purchaseCost || 0);
+      totalStockQuantity += p.currentQuantity || 0;
     });
 
     // Customers count
@@ -62,21 +64,22 @@ export class ReportsService {
     const salesFilter: any = {
       tenantId,
       createdAt: { $gte: start, $lte: end },
+      paymentStatus: { $ne: 'CANCELLED' },
     };
     const sales = await this.saleModel.find(salesFilter).exec();
     const totalSalesCount = sales.length;
 
     let totalRevenue = 0;
     let costOfGoodsSold = 0;
-    const paymentMethodTotals: Record<string, number> = {};
+    let totalItemsSold = 0;
     const productSalesMap: Record<string, { name: string; quantity: number; revenue: number }> = {};
 
     sales.forEach((s) => {
       totalRevenue += s.grandTotal || 0;
-      paymentMethodTotals[s.paymentMethod] = (paymentMethodTotals[s.paymentMethod] || 0) + (s.grandTotal || 0);
 
       s.items?.forEach((item) => {
         costOfGoodsSold += (item.costPrice || 0) * (item.quantity || 1);
+        totalItemsSold += item.quantity || 1;
         const pKey = item.productId?.toString() || item.productName;
         if (!productSalesMap[pKey]) {
           productSalesMap[pKey] = { name: item.productName, quantity: 0, revenue: 0 };
@@ -97,7 +100,56 @@ export class ReportsService {
       totalExpenses += e.amount || 0;
     });
 
-    const grossProfit = totalRevenue - costOfGoodsSold;
+    // Collections include sale down-payments and later debt repayments.
+    const periodPayments = await this.paymentModel.find({
+      tenantId,
+      paymentDate: { $gte: start, $lte: end },
+      isCancelled: { $ne: true },
+    }).exec();
+    let totalCollected = 0;
+    const paymentMethodTotals: Record<string, number> = {};
+    periodPayments.forEach((payment) => {
+      totalCollected += payment.amount || 0;
+      paymentMethodTotals[payment.paymentMethod] = (paymentMethodTotals[payment.paymentMethod] || 0) + (payment.amount || 0);
+    });
+
+    const paymentSaleIds = [...new Set(
+      periodPayments
+        .map((payment) => payment.saleId?.toString())
+        .filter((id): id is string => Boolean(id)),
+    )];
+    const creditSalesForPayments = paymentSaleIds.length
+      ? await this.saleModel.find({
+          tenantId,
+          _id: { $in: paymentSaleIds },
+          saleType: SaleType.CREDIT_SALE,
+          paymentStatus: { $ne: 'CANCELLED' },
+        }).exec()
+      : [];
+    const creditSaleById = new Map(creditSalesForPayments.map((sale) => [sale._id.toString(), sale]));
+    const getSaleCost = (sale: SaleDocument) => sale.items?.reduce(
+      (sum, item) => sum + (item.costPrice || 0) * (item.quantity || 1),
+      0,
+    ) || 0;
+    const getSaleProfitMargin = (sale: SaleDocument) => sale.grandTotal > 0
+      ? (sale.grandTotal - getSaleCost(sale)) / sale.grandTotal
+      : 0;
+
+    // Credit-sale profit is recognized as its payments arrive. This keeps a repayment
+    // from being counted twice when the sale and its repayment fall in one period.
+    const creditSalesProfitBooked = sales
+      .filter((sale) => sale.saleType === SaleType.CREDIT_SALE)
+      .reduce((sum, sale) => sum + (sale.grandTotal || 0) - getSaleCost(sale), 0);
+    const creditCollectionProfit = periodPayments.reduce((sum, payment) => {
+      const sale = payment.saleId ? creditSaleById.get(payment.saleId.toString()) : undefined;
+      return sale ? sum + (payment.amount || 0) * getSaleProfitMargin(sale) : sum;
+    }, 0);
+    const debtRepaymentProfit = periodPayments.reduce((sum, payment) => {
+      if (!payment.debtId || !payment.saleId) return sum;
+      const sale = creditSaleById.get(payment.saleId.toString());
+      return sale ? sum + (payment.amount || 0) * getSaleProfitMargin(sale) : sum;
+    }, 0);
+    const grossProfit = totalRevenue - costOfGoodsSold - creditSalesProfitBooked + creditCollectionProfit;
     const netProfit = grossProfit - totalExpenses;
 
     // Profit / Breakeven / Loss classification per user request:
@@ -118,12 +170,17 @@ export class ReportsService {
       let saleProfit = 0;
       let saleLoss = 0;
       let saleBreakeven = 0;
+      const itemRevenueTotal = s.items?.reduce((sum, item) => sum + (item.total || 0), 0) || 0;
 
       s.items?.forEach((item) => {
         const qty = item.quantity || 1;
-        const unit = item.unitPrice !== undefined ? item.unitPrice : 0;
         const cost = item.costPrice !== undefined ? item.costPrice : 0;
-        const diff = (unit - cost) * qty;
+        const itemRevenue = item.total || (item.unitPrice || 0) * qty;
+        const allocatedDiscount = itemRevenueTotal > 0
+          ? (s.totalDiscount || 0) * itemRevenue / itemRevenueTotal
+          : 0;
+        const netItemRevenue = Math.max(0, itemRevenue - allocatedDiscount);
+        const diff = netItemRevenue - cost * qty;
 
         if (diff > 0.001) {
           saleProfit += diff;
@@ -132,7 +189,7 @@ export class ReportsService {
           saleLoss += Math.abs(diff);
           lossItemsCount += qty;
         } else {
-          saleBreakeven += (item.total || unit * qty);
+          saleBreakeven += netItemRevenue;
           breakevenItemsCount += qty;
         }
       });
@@ -172,17 +229,33 @@ export class ReportsService {
     // Debts & Repayments (all-time snapshot or period)
     const allDebts = await this.debtModel.find({ tenantId }).exec();
     let totalOutstandingDebt = 0;
-    let totalDebtRepaid = 0;
     const now = new Date();
     let overdueCount = 0;
 
     allDebts.forEach((d) => {
-      totalOutstandingDebt += d.remainingBalance || 0;
-      totalDebtRepaid += d.amountRepaid || 0;
+      if (
+        (d.remainingBalance || 0) > 0 &&
+        d.status !== DebtStatus.PAID &&
+        d.status !== DebtStatus.CANCELLED
+      ) {
+        totalOutstandingDebt += d.remainingBalance || 0;
+      }
       if (d.status !== DebtStatus.PAID && d.dueDate && new Date(d.dueDate) < now) {
         overdueCount++;
       }
     });
+
+    const debtPaymentTotals = await this.paymentModel.aggregate([
+      {
+        $match: {
+          tenantId,
+          debtId: { $exists: true, $ne: null },
+          isCancelled: { $ne: true },
+        },
+      },
+      { $group: { _id: null, total: { $sum: '$amount' } } },
+    ]).exec();
+    const totalDebtRepaid = debtPaymentTotals[0]?.total || 0;
 
     // Best-selling products
     const bestSelling = Object.values(productSalesMap)
@@ -192,7 +265,7 @@ export class ReportsService {
     // Sales by Payment method array
     const salesByPaymentMethod = Object.keys(paymentMethodTotals).map((method) => ({
       method,
-      amount: paymentMethodTotals[method],
+      amount: Number((paymentMethodTotals[method] || 0).toFixed(2)),
     }));
 
     // Daily trends (last 7 or 14 points)
@@ -209,7 +282,7 @@ export class ReportsService {
       const key = `${d.getMonth() + 1}/${d.getDate()}`;
       if (trendMap[key]) {
         trendMap[key].sales += 1;
-        trendMap[key].revenue += s.grandTotal || 0;
+        trendMap[key].revenue = Number(((trendMap[key].revenue || 0) + (s.grandTotal || 0)).toFixed(2));
       }
     });
 
@@ -217,7 +290,7 @@ export class ReportsService {
       const d = new Date(e.expenseDate);
       const key = `${d.getMonth() + 1}/${d.getDate()}`;
       if (trendMap[key]) {
-        trendMap[key].expenses += e.amount || 0;
+        trendMap[key].expenses = Number(((trendMap[key].expenses || 0) + (e.amount || 0)).toFixed(2));
       }
     });
 
@@ -225,13 +298,13 @@ export class ReportsService {
 
     // Recent items
     const recentSales = await this.saleModel
-      .find({ tenantId })
+      .find({ tenantId, paymentStatus: { $ne: 'CANCELLED' } })
       .sort({ createdAt: -1 })
       .limit(6)
       .exec();
 
     const recentPayments = await this.paymentModel
-      .find({ tenantId })
+      .find({ tenantId, isCancelled: { $ne: true } })
       .populate('customerId', 'name phone')
       .sort({ createdAt: -1 })
       .limit(6)
@@ -251,15 +324,19 @@ export class ReportsService {
       period,
       stats: {
         totalProducts,
-        totalInventoryValue,
+        totalStockQuantity,
+        totalInventoryValue: Number(totalInventoryValue.toFixed(2)),
         totalSalesCount,
-        totalRevenue,
-        costOfGoodsSold,
-        grossProfit,
-        totalExpenses,
-        netProfit,
-        totalOutstandingDebt,
-        totalDebtRepaid,
+        totalRevenue: Number(totalRevenue.toFixed(2)),
+        totalItemsSold,
+        costOfGoodsSold: Number(costOfGoodsSold.toFixed(2)),
+        grossProfit: Number(grossProfit.toFixed(2)),
+        totalExpenses: Number(totalExpenses.toFixed(2)),
+        totalCollected: Number(totalCollected.toFixed(2)),
+        debtRepaymentProfit: Number(debtRepaymentProfit.toFixed(2)),
+        netProfit: Number(netProfit.toFixed(2)),
+        totalOutstandingDebt: Number(totalOutstandingDebt.toFixed(2)),
+        totalDebtRepaid: Number(totalDebtRepaid.toFixed(2)),
         totalCustomers,
         overdueCount,
         profitClassification,

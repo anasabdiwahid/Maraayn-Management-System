@@ -18,6 +18,7 @@ import {
 import api from '../../api/client.js';
 import { useAuth } from '../../context/AuthContext.js';
 import { ReceiptModal } from '../../components/common/ReceiptModal.js';
+import { formatMoney } from '../../utils/format.js';
 
 export const SalesHistoryPage: React.FC = () => {
   const { tenant } = useAuth();
@@ -304,23 +305,23 @@ export const SalesHistoryPage: React.FC = () => {
 
                       <td className="py-3 px-4 font-bold text-slate-900 whitespace-nowrap">
                         {isCancelled ? (
-                          <span className="line-through text-slate-400">{currency}{s.grandTotal}</span>
+                          <span className="line-through text-slate-400">{currency}{formatMoney(s.grandTotal)}</span>
                         ) : (
-                          <span>{currency}{s.grandTotal}</span>
+                          <span>{currency}{formatMoney(s.grandTotal)}</span>
                         )}
                       </td>
 
                       <td className="py-3 px-4 text-emerald-600 font-semibold whitespace-nowrap">
                         {isCancelled ? (
-                          <span className="line-through text-slate-400">{currency}{s.amountPaid}</span>
+                          <span className="line-through text-slate-400">{currency}{formatMoney(s.amountPaid)}</span>
                         ) : (
-                          <span>{currency}{s.amountPaid}</span>
+                          <span>{currency}{formatMoney(s.amountPaid)}</span>
                         )}
                       </td>
 
                       <td className="py-3 px-4 whitespace-nowrap">
                         {s.balanceDue > 0 && !isCancelled ? (
-                          <span className="font-bold text-rose-600">{currency}{s.balanceDue}</span>
+                          <span className="font-bold text-rose-600">{currency}{formatMoney(s.balanceDue)}</span>
                         ) : (
                           <span className="text-slate-400">-</span>
                         )}

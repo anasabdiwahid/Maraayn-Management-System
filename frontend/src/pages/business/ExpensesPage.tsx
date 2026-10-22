@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { TrendingDown, Plus, Search, Calendar, DollarSign, X } from 'lucide-react';
 import api from '../../api/client.js';
 import { useAuth } from '../../context/AuthContext.js';
+import { formatMoney } from '../../utils/format.js';
 
 export const ExpensesPage: React.FC = () => {
   const { tenant } = useAuth();
@@ -75,7 +76,7 @@ export const ExpensesPage: React.FC = () => {
         <div>
           <span className="text-xs font-bold uppercase tracking-wider text-rose-600">Total Expenses</span>
           <h3 className="text-2xl font-black text-rose-800 mt-1">
-            {currency}{totalExpenseAmount}
+            {currency}{formatMoney(totalExpenseAmount)}
           </h3>
           <p className="text-[11px] text-slate-400 mt-0.5">{expenses.length} recorded expense entries</p>
         </div>
@@ -117,7 +118,7 @@ export const ExpensesPage: React.FC = () => {
                   </td>
                   <td className="py-3 px-4 text-slate-500">{new Date(e.expenseDate || e.createdAt).toLocaleDateString()}</td>
                   <td className="py-3 px-4 font-mono">{e.paymentMethod}</td>
-                  <td className="py-3 px-4 font-extrabold text-rose-600">-{currency}{e.amount}</td>
+                  <td className="py-3 px-4 font-extrabold text-rose-600">-{currency}{formatMoney(e.amount)}</td>
                   <td className="py-3 px-4 text-slate-500">{e.description || '-'}</td>
                 </tr>
               ))

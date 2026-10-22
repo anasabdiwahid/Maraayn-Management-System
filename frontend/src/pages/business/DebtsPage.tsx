@@ -8,7 +8,6 @@ import {
   AlertCircle,
   CheckCircle2,
   X,
-  MessageSquare,
   Receipt,
   Clock,
   History,
@@ -18,6 +17,7 @@ import api from '../../api/client.js';
 import { useAuth } from '../../context/AuthContext.js';
 import { Debt } from '../../types/index.js';
 import { ReceiptModal } from '../../components/common/ReceiptModal.js';
+import { formatMoney } from '../../utils/format.js';
 
 export const DebtsPage: React.FC = () => {
   const { tenant } = useAuth();
@@ -80,6 +80,25 @@ export const DebtsPage: React.FC = () => {
     setPaymentReference('');
     setPaymentNotes('');
     setRepayModalOpen(true);
+  };
+
+  const openDebtSaleReceipt = (debt: any) => {
+    const sale = typeof debt.saleId === 'object' && debt.saleId ? debt.saleId : {};
+    const customer = typeof debt.customerId === 'object' && debt.customerId ? debt.customerId : {};
+    setGeneratedReceipt({
+      receiptNumber: sale.receiptNumber || debt.debtNumber,
+      receiptType: sale.saleType || 'CREDIT_SALE',
+      customerName: sale.customerName || customer.name || 'Macmiil',
+      customerPhone: sale.customerPhone || customer.phone,
+      items: sale.items || [],
+      grandTotal: sale.grandTotal ?? debt.totalSaleAmount,
+      amountPaid: Number(debt.initialPayment || 0) + Number(debt.amountRepaid || 0),
+      balanceRemaining: debt.remainingBalance,
+      paymentMethod: sale.paymentMethod || 'CASH',
+      notes: sale.notes || debt.notes,
+      createdAt: sale.createdAt || debt.saleDate,
+    });
+    setReceiptModalOpen(true);
   };
 
   const handleRecordPayment = async (e: React.FormEvent) => {
@@ -145,32 +164,6 @@ export const DebtsPage: React.FC = () => {
     } finally {
       setSubmitting(false);
     }
-  };
-
-  const getWhatsAppReminderLink = (debt: any) => {
-    let phone = (debt.customerId?.phone || '').replace(/[^0-9]/g, '');
-    if (phone.startsWith('0')) {
-      phone = '252' + phone.substring(1);
-    } else if (phone.length === 9) {
-      phone = '252' + phone;
-    }
-
-    let text = `*${(tenant?.name || 'Maraayn Business').toUpperCase()} — DEBT PAYMENT REMINDER*\n`;
-    text += `Customer: *${debt.customerId?.name || 'Customer'}*\n`;
-    text += `Debt Reference: *${debt.debtNumber}*\n`;
-    text += `Sale Date: ${new Date(debt.saleDate).toLocaleDateString()}\n`;
-    text += `Total Sale Amount: ${currency}${debt.totalSaleAmount}\n`;
-    text += `Total Amount Paid: ${currency}${debt.amountRepaid + debt.initialPayment}\n`;
-    text += `--------------------------------\n`;
-    text += `*OUTSTANDING BALANCE DUE: ${currency}${debt.remainingBalance}*\n`;
-    text += `--------------------------------\n`;
-    if (debt.dueDate) {
-      text += `Due Date: ${new Date(debt.dueDate).toLocaleDateString()}\n`;
-    }
-    text += `Please contact us at your earliest convenience to settle your account.\n`;
-    text += `Maraayn — Your Business, In One Place`;
-
-    return phone ? `https://wa.me/${phone}?text=${encodeURIComponent(text)}` : `https://wa.me/?text=${encodeURIComponent(text)}`;
   };
 
   return (
@@ -302,11 +295,11 @@ export const DebtsPage: React.FC = () => {
                       </td>
 
                       <td className="py-3 px-4 font-bold text-slate-800">
-                        {currency}{d.totalSaleAmount}
+                        {currency}{formatMoney(d.totalSaleAmount)}
                       </td>
 
                       <td className="py-3 px-4 text-emerald-600 font-semibold">
-                        {currency}{d.amountRepaid + (d.initialPayment || 0)}
+                        {currency}{formatMoney(d.amountRepaid + (d.initialPayment || 0))}
                       </td>
 
                       <td className="py-3 px-4">
@@ -317,7 +310,7 @@ export const DebtsPage: React.FC = () => {
                               : 'bg-rose-50 text-rose-700 border border-rose-200'
                           }`}
                         >
-                          {currency}{d.remainingBalance}
+                          {currency}{formatMoney(d.remainingBalance)}
                         </span>
                       </td>
 
@@ -340,17 +333,17 @@ export const DebtsPage: React.FC = () => {
                       </td>
 
                       <td className="py-3 px-4 text-right space-x-1.5 whitespace-nowrap">
-                        {/* WhatsApp Reminder */}
+                        {/* Open the original sale receipt to share it as an image */}
                         {!isPaid && (
-                          <a
-                            href={getWhatsAppReminderLink(d)}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            title="Send WhatsApp Reminder"
+                          <button
+                            type="button"
+                            onClick={() => openDebtSaleReceipt(d)}
+                            title="Fur rasiidka iibka daynta si WhatsApp sawir ahaan loogu diro"
+                            aria-label="Fur rasiidka iibka daynta"
                             className="inline-flex p-1.5 rounded-lg border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 transition-colors"
                           >
-                            <MessageSquare className="w-3.5 h-3.5" />
-                          </a>
+                            <Receipt className="w-3.5 h-3.5" />
+                          </button>
                         )}
 
                         {/* View History */}
@@ -405,7 +398,7 @@ export const DebtsPage: React.FC = () => {
                 </div>
                 <div className="flex justify-between text-slate-600">
                   <span>Current Balance Due:</span>
-                  <span className="font-extrabold text-rose-600 text-sm">{currency}{selectedDebt.remainingBalance}</span>
+                  <span className="font-extrabold text-rose-600 text-sm">{currency}{formatMoney(selectedDebt.remainingBalance)}</span>
                 </div>
               </div>
 
@@ -432,14 +425,14 @@ export const DebtsPage: React.FC = () => {
                     onClick={() => setPaymentAmount(selectedDebt.remainingBalance)}
                     className="text-brand-navy font-bold hover:underline"
                   >
-                    Pay Full ({currency}{selectedDebt.remainingBalance})
+                    Pay Full ({currency}{formatMoney(selectedDebt.remainingBalance)})
                   </button>
                   <button
                     type="button"
                     onClick={() => setPaymentAmount(Number((selectedDebt.remainingBalance / 2).toFixed(2)))}
                     className="text-brand-navy font-bold hover:underline"
                   >
-                    Pay Half ({currency}{(selectedDebt.remainingBalance / 2).toFixed(2)})
+                    Pay Half ({currency}{formatMoney(selectedDebt.remainingBalance / 2)})
                   </button>
                 </div>
               </div>
@@ -507,15 +500,15 @@ export const DebtsPage: React.FC = () => {
               <div className="bg-slate-50 p-3 rounded-xl space-y-1">
                 <div className="flex justify-between">
                   <span className="text-slate-500">Total Sale:</span>
-                  <span className="font-bold">{currency}{selectedDebt.totalSaleAmount}</span>
+                  <span className="font-bold">{currency}{formatMoney(selectedDebt.totalSaleAmount)}</span>
                 </div>
                 <div className="flex justify-between text-emerald-700 font-bold">
                   <span>Total Repaid:</span>
-                  <span>{currency}{selectedDebt.amountRepaid + selectedDebt.initialPayment}</span>
+                  <span>{currency}{formatMoney(selectedDebt.amountRepaid + selectedDebt.initialPayment)}</span>
                 </div>
                 <div className="flex justify-between text-rose-700 font-bold">
                   <span>Remaining Balance:</span>
-                  <span>{currency}{selectedDebt.remainingBalance}</span>
+                  <span>{currency}{formatMoney(selectedDebt.remainingBalance)}</span>
                 </div>
               </div>
 
@@ -528,13 +521,13 @@ export const DebtsPage: React.FC = () => {
                   {selectedDebt.transactionHistory.map((h: any, i: number) => (
                     <div key={i} className="p-3 bg-white flex justify-between items-center text-xs">
                       <div>
-                        <span className="font-bold text-emerald-600 block">+{currency}{h.amount}</span>
+                        <span className="font-bold text-emerald-600 block">+{currency}{formatMoney(h.amount)}</span>
                         <span className="text-[10px] text-slate-400 font-mono">
                           {new Date(h.date).toLocaleDateString()} • {h.method}
                         </span>
                       </div>
                       <span className="text-slate-500 font-mono text-[11px]">
-                        Balance: {currency}{h.balanceAfter}
+                        Balance: {currency}{formatMoney(h.balanceAfter)}
                       </span>
                     </div>
                   ))}

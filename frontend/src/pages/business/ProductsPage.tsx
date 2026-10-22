@@ -15,6 +15,7 @@ import {
 import api from '../../api/client.js';
 import { useAuth } from '../../context/AuthContext.js';
 import { Product } from '../../types/index.js';
+import { formatMoney } from '../../utils/format.js';
 
 export const ProductsPage: React.FC = () => {
   const { tenant } = useAuth();
@@ -245,11 +246,11 @@ export const ProductsPage: React.FC = () => {
                       </td>
 
                       <td className="py-3 px-4 font-bold text-slate-900">
-                        {currency}{p.sellingPrice}
+                        {currency}{formatMoney(p.sellingPrice)}
                       </td>
 
                       <td className="py-3 px-4 text-slate-500">
-                        {currency}{p.purchaseCost}
+                        {currency}{formatMoney(p.purchaseCost)}
                       </td>
 
                       <td className="py-3 px-4">

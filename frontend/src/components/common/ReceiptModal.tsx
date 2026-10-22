@@ -5,7 +5,6 @@ import {
   Download,
   Copy,
   Check,
-  MessageSquare,
   Image as ImageIcon,
   FileText,
   Loader2,
@@ -16,6 +15,7 @@ import {
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { useAuth } from '../../context/AuthContext.js';
+import { resolveApiAssetUrl } from '../../api/client.js';
 
 interface ReceiptModalProps {
   isOpen: boolean;
@@ -44,62 +44,49 @@ interface ReceiptModalProps {
   };
 }
 
-// Helper: Convert numbers to English words for the "In word" line of the voucher
+// Somali amount-in-words text for the voucher receipt.
 const numberToWords = (num: number, currencyName: string = 'Dollar'): string => {
-  if (isNaN(num) || num < 0) return '';
-  if (num === 0) return `Zero ${currencyName}s Only`;
+  if (!Number.isFinite(num) || num < 0) return '';
 
-  const ones = [
-    '', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine',
-    'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen',
-    'Seventeen', 'Eighteen', 'Nineteen'
+  const small = [
+    'eber', 'kow', 'laba', 'saddex', 'afar', 'shan', 'lix', 'toddoba', 'siddeed', 'sagaal',
+    'toban', 'kow iyo toban', 'laba iyo toban', 'saddex iyo toban', 'afar iyo toban',
+    'shan iyo toban', 'lix iyo toban', 'toddoba iyo toban', 'siddeed iyo toban', 'sagaal iyo toban',
   ];
-  const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+  const tens = ['', '', 'labaatan', 'soddon', 'afartan', 'konton', 'lixdan', 'toddobaatan', 'siddeetan', 'sagaashan'];
 
-  const convertGroup = (n: number): string => {
-    let s = '';
-    if (n >= 100) {
-      s += ones[Math.floor(n / 100)] + ' Hundred ';
-      n %= 100;
+  const underThousand = (value: number): string => {
+    if (value < 20) return small[value];
+    if (value < 100) {
+      const remainder = value % 10;
+      return `${tens[Math.floor(value / 10)]}${remainder ? ` iyo ${small[remainder]}` : ''}`;
     }
-    if (n >= 20) {
-      s += tens[Math.floor(n / 10)] + ' ';
-      n %= 10;
-    }
-    if (n > 0) {
-      s += ones[n] + ' ';
-    }
-    return s.trim();
+    const hundreds = Math.floor(value / 100);
+    const remainder = value % 100;
+    const prefix = hundreds === 1 ? 'boqol' : `${small[hundreds]} boqol`;
+    return `${prefix}${remainder ? ` iyo ${underThousand(remainder)}` : ''}`;
   };
 
-  const integerPart = Math.floor(num);
-  const centsPart = Math.round((num - integerPart) * 100);
+  const wholeNumber = (value: number): string => {
+    if (value < 1000) return underThousand(value);
+    if (value < 1_000_000) {
+      const thousands = Math.floor(value / 1000);
+      const remainder = value % 1000;
+      return `${thousands === 1 ? 'kun' : `${wholeNumber(thousands)} kun`}${remainder ? ` iyo ${wholeNumber(remainder)}` : ''}`;
+    }
+    const millions = Math.floor(value / 1_000_000);
+    const remainder = value % 1_000_000;
+    return `${wholeNumber(millions)} milyan${remainder ? ` iyo ${wholeNumber(remainder)}` : ''}`;
+  };
 
-  let result = '';
-  if (integerPart === 0) {
-    result = 'Zero';
-  } else {
-    let intNum = integerPart;
-    const billions = Math.floor(intNum / 1000000000);
-    intNum %= 1000000000;
-    const millions = Math.floor(intNum / 1000000);
-    intNum %= 1000000;
-    const thousands = Math.floor(intNum / 1000);
-    const remainder = intNum % 1000;
-
-    if (billions > 0) result += convertGroup(billions) + ' Billion ';
-    if (millions > 0) result += convertGroup(millions) + ' Million ';
-    if (thousands > 0) result += convertGroup(thousands) + ' Thousand ';
-    if (remainder > 0) result += convertGroup(remainder) + ' ';
-  }
-
-  result = result.trim() + (integerPart === 1 ? ` ${currencyName}` : ` ${currencyName}s`);
-
-  if (centsPart > 0) {
-    result += ` and ${convertGroup(centsPart)} ${centsPart === 1 ? 'Cent' : 'Cents'}`;
-  }
-
-  return result.trim() + ' Only';
+  const totalCents = Math.round(num * 100);
+  const integerPart = Math.floor(totalCents / 100);
+  const centsPart = totalCents % 100;
+  const currency = currencyName === 'Dollar' ? 'doollar' : 'shilin';
+  const wholeText = wholeNumber(integerPart);
+  const centsText = centsPart ? ` iyo ${wholeNumber(centsPart)} senti` : '';
+  const result = `${wholeText} ${currency}${centsText}`;
+  return result.charAt(0).toLocaleUpperCase() + result.slice(1);
 };
 
 export const ReceiptModal: React.FC<ReceiptModalProps> = ({ isOpen, onClose, receiptData }) => {
@@ -176,7 +163,6 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ isOpen, onClose, rec
           await navigator.share({
             files: [imageFile],
             title: `${tenant?.name || 'Maraayn'} Receipt #${receiptData.receiptNumber}`,
-            text: `Receipt #${receiptData.receiptNumber} - ${tenant?.name || 'Maraayn Business'}`,
           });
           setLoadingAction(null);
           return;
@@ -206,11 +192,8 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ isOpen, onClose, rec
       document.body.removeChild(link);
       setTimeout(() => window.URL.revokeObjectURL(url), 1000);
 
-      const customerText = encodeURIComponent(
-        `Asc ${receiptData.customerName || 'Macaamil'}, kani waa recite-kaaga #${receiptData.receiptNumber} ee ganacsiga ${tenant?.name || 'Maraayn'}. Fadlan lifaaqa hoose eeg.`
-      );
       const waUrl = customerPhoneClean
-        ? `https://web.whatsapp.com/send?phone=${customerPhoneClean}&text=${customerText}`
+        ? `https://web.whatsapp.com/send?phone=${customerPhoneClean}`
         : `https://web.whatsapp.com/`;
 
       window.open(waUrl, '_blank');
@@ -259,7 +242,6 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ isOpen, onClose, rec
           await navigator.share({
             files: [pdfFile],
             title: `${tenant?.name || 'Maraayn'} Receipt #${receiptData.receiptNumber}`,
-            text: `Receipt PDF #${receiptData.receiptNumber} - ${tenant?.name || 'Maraayn Business'}`,
           });
           setLoadingAction(null);
           return;
@@ -274,11 +256,8 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ isOpen, onClose, rec
 
       pdf.save(fileName);
 
-      const customerText = encodeURIComponent(
-        `Asc ${receiptData.customerName || 'Macaamil'}, kani waa lifaaqa recite-kaaga Document (PDF) #${receiptData.receiptNumber} ee ${tenant?.name || 'Maraayn'}.`
-      );
       const waUrl = customerPhoneClean
-        ? `https://web.whatsapp.com/send?phone=${customerPhoneClean}&text=${customerText}`
+        ? `https://web.whatsapp.com/send?phone=${customerPhoneClean}`
         : `https://web.whatsapp.com/`;
 
       window.open(waUrl, '_blank');
@@ -363,31 +342,6 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ isOpen, onClose, rec
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-  };
-
-  // WhatsApp plain text url (Fallback)
-  const getWhatsAppTextUrl = () => {
-    let text = `*${(tenant?.name || 'Maraayn Business').toUpperCase()} — RECEIPT*\n`;
-    text += `Receipt Number: *${receiptData.receiptNumber}*\n`;
-    text += `Date: ${new Date(receiptData.createdAt || Date.now()).toLocaleDateString()}\n`;
-    text += `Customer: *${receiptData.customerName || 'Customer'}*\n`;
-    text += `--------------------------------\n`;
-    receiptData.items?.forEach((item) => {
-      text += `• ${item.productName} (x${item.quantity || 1}) — ${currency}${item.total || item.unitPrice}\n`;
-    });
-    text += `--------------------------------\n`;
-    text += `Grand Total: *${currency}${receiptData.grandTotal}*\n`;
-    text += `Amount Paid: *${currency}${receiptData.amountPaid}*\n`;
-    if (remainingDebt > 0) {
-      text += `Remaining Debt: *${currency}${remainingDebt}*\n`;
-    }
-    text += `Payment Method: ${receiptData.paymentMethod || 'CASH'}\n\n`;
-    text += `${tenant?.receiptSettings?.footerMessage || 'Thank you for your business!'}\n`;
-    text += `Maraayn — Your Business, In One Place`;
-
-    return customerPhoneClean
-      ? `https://wa.me/${customerPhoneClean}?text=${encodeURIComponent(text)}`
-      : `https://wa.me/?text=${encodeURIComponent(text)}`;
   };
 
   // Items string for the "For" row of the voucher
@@ -497,7 +451,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ isOpen, onClose, rec
                 {/* Left: Brand Logo & System Info */}
                 <div className="flex items-center space-x-2.5 max-w-[190px]">
                   <img
-                    src="/logo.png"
+                    src={resolveApiAssetUrl(tenant?.logoUrl)}
                     alt="Logo"
                     crossOrigin="anonymous"
                     className="h-8 object-contain shrink-0"
@@ -507,18 +461,15 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ isOpen, onClose, rec
                   />
                   <div className="min-w-0">
                     <span className="font-black text-xs text-[#0f233a] uppercase tracking-wider block leading-tight">
-                      Maraayn
-                    </span>
-                    <span className="text-[9px] text-slate-500 font-medium block leading-tight">
-                      Management System
+                      {tenant?.name || 'Dukaanka'}
                     </span>
                   </div>
                 </div>
 
-                {/* Center: MONEY RECEIPT Title */}
+                {/* Cinwaanka rasiidka */}
                 <div className="text-center shrink-0">
                   <h1 className="font-black text-lg sm:text-xl text-[#0f233a] tracking-wider uppercase leading-tight">
-                    MONEY RECEIPT
+                    RASIIDKA LACAGTA
                   </h1>
                   <div className="flex items-center justify-center space-x-2 text-[10px] text-slate-600 font-bold mt-0.5">
                     {tenant?.ownerPhone && <span>📞 {tenant.ownerPhone}</span>}
@@ -537,7 +488,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ isOpen, onClose, rec
                     {tenant?.location || 'Mogadishu'}
                   </p>
                   <p className="text-[10px] text-slate-400 font-mono font-bold leading-normal">
-                    Receipt #{receiptData.receiptNumber}
+                    Rasiid #{receiptData.receiptNumber}
                   </p>
                 </div>
               </div>
@@ -548,15 +499,15 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ isOpen, onClose, rec
               {/* Sub-header Meta Line (NO. & Date) */}
               <div className="flex items-center justify-between px-6 py-1.5 text-xs font-bold text-[#0f233a] bg-slate-50/70 border-b border-slate-200">
                 <div className="flex items-center space-x-2">
-                  <span className="font-black text-slate-900">NO.</span>
-                  <span className="font-mono font-bold text-[#0f233a] border-b border-dotted border-slate-400 px-2 min-w-[120px]">
+                  <span className="font-black text-slate-900 pb-1">Lr.</span>
+                  <span className="font-mono font-bold text-[#0f233a] border-b border-dotted border-slate-400 px-2 pb-1 min-w-[120px]">
                     {receiptData.receiptNumber}
                   </span>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <span className="font-black text-slate-900">Date</span>
-                  <span className="font-medium text-slate-800 border-b border-dotted border-slate-400 px-2 min-w-[140px] text-center">
-                    {new Date(receiptData.createdAt || Date.now()).toLocaleString()}
+                  <span className="font-black text-slate-900 pb-1">Taariikh</span>
+                  <span className="font-medium text-slate-800 border-b border-dotted border-slate-400 px-2 pb-1 min-w-[140px] text-center">
+                    {new Date(receiptData.createdAt || Date.now()).toLocaleString('so-SO')}
                   </span>
                 </div>
               </div>
@@ -564,68 +515,70 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ isOpen, onClose, rec
               {/* Voucher Form Rows */}
               <div className="px-6 py-3.5 space-y-2.5 text-xs text-slate-900">
                 {/* Row 1: Received with thanks from */}
-                <div className="flex items-baseline space-x-2">
-                  <span className="font-black text-slate-800 shrink-0">
-                    Received with thanks from
+                <div className="flex items-end space-x-2 min-h-[28px]">
+                  <span className="font-black text-slate-800 shrink-0 pb-1.5">
+                    Waxaa lacagta laga qabtay
                   </span>
-                  <div className="flex-1 border-b border-dotted border-slate-400 pb-0.5 font-black text-slate-950 px-2 truncate">
-                    {receiptData.customerName || 'Walk-in Customer'}
+                  <div className="flex-1 min-h-[26px] border-b border-dotted border-slate-400 pb-1.5 leading-normal font-black text-slate-950 px-2 truncate bg-white">
+                    {receiptData.customerName || 'Macmiil toos ah'}
                     {receiptData.customerPhone ? ` (${receiptData.customerPhone})` : ''}
                   </div>
                 </div>
 
                 {/* Row 2: Amount in numbers */}
-                <div className="flex items-baseline space-x-2">
-                  <span className="font-black text-slate-800 shrink-0">Amount</span>
-                  <div className="flex-1 border-b border-dotted border-slate-400 pb-0.5 font-mono font-black text-emerald-700 text-sm px-2">
+                <div className="flex items-end space-x-2 min-h-[28px]">
+                  <span className="font-black text-slate-800 shrink-0 pb-1.5">Qaddarka</span>
+                  <div className="flex-1 min-h-[26px] border-b border-dotted border-slate-400 pb-1.5 leading-normal font-mono font-black text-emerald-700 text-sm px-2 bg-white">
                     {currency}
                     {receiptData.grandTotal.toFixed(2)}
                   </div>
                 </div>
 
-                {/* Row 3: In word */}
-                <div className="flex items-baseline space-x-2">
-                  <span className="font-black text-slate-800 shrink-0">In word</span>
-                  <div className="flex-1 border-b border-dotted border-slate-400 pb-0.5 italic font-bold text-slate-800 px-2 truncate">
-                    {amountInWords}
+                {/* Row 3: Amount written in words */}
+                <div className="flex items-end space-x-2 min-h-[28px]">
+                  <span className="shrink-0 pb-1.5 font-black text-slate-800">Qaddarka lacagta oo qoraal ah</span>
+                  <div className="flex-1 min-h-[26px] border-b border-dotted border-slate-400 pb-1.5 leading-normal italic font-bold text-slate-800 px-2 truncate bg-white">
+                    ({amountInWords})
                   </div>
                 </div>
 
                 {/* Row 4: For & Branch */}
-                <div className="flex items-baseline space-x-3">
-                  <div className="flex-1 flex items-baseline space-x-2 min-w-0">
-                    <span className="font-black text-slate-800 shrink-0">For</span>
-                    <div className="flex-1 border-b border-dotted border-slate-400 pb-0.5 font-bold text-slate-900 px-2 truncate">
+                <div className="flex items-end space-x-3 min-h-[28px]">
+                  <div className="flex-1 flex items-end space-x-2 min-w-0">
+                    <span className="font-black text-slate-800 shrink-0 pb-1.5">Alaabta</span>
+                    <div className="flex-1 min-h-[26px] border-b border-dotted border-slate-400 pb-1.5 leading-normal font-bold text-slate-900 px-2 truncate bg-white">
                       {itemsDescription}
                     </div>
                   </div>
-                  <div className="w-1/3 flex items-baseline space-x-2 min-w-0">
-                    <span className="font-black text-slate-800 shrink-0">Branch</span>
-                    <div className="flex-1 border-b border-dotted border-slate-400 pb-0.5 font-bold text-slate-800 px-2 truncate">
-                      {tenant?.location || 'Main Branch'}
+                  <div className="w-1/3 flex items-end space-x-2 min-w-0">
+                    <span className="font-black text-slate-800 shrink-0 pb-1.5">Laanta</span>
+                    <div className="flex-1 min-h-[26px] border-b border-dotted border-slate-400 pb-1.5 leading-normal font-bold text-slate-800 px-2 truncate bg-white">
+                      {tenant?.location || 'Laanta guud'}
                     </div>
                   </div>
                 </div>
 
                 {/* Row 5: ACCT, PAID, DUE */}
-                <div className="flex items-baseline justify-between pt-1 text-slate-800">
-                  <div className="flex items-baseline space-x-1.5 flex-1">
-                    <span className="font-black shrink-0">ACCT.</span>
-                    <span className="border-b border-dotted border-slate-400 px-2 font-bold text-slate-900 uppercase">
-                      {receiptData.paymentMethod || 'CASH'}
+              <div className="flex items-end justify-between pt-1 text-slate-800 min-h-[30px]">
+                  <div className="flex items-end space-x-1.5 flex-1 min-w-0">
+                    <span className="font-black shrink-0 pb-1.5">Habka</span>
+                    <span className="inline-flex min-h-[26px] items-end border-b border-dotted border-slate-400 px-2 pb-1 font-bold text-slate-900 bg-white">
+                      {receiptData.paymentMethod === 'MOBILE_MONEY' ? 'Lacagta telefoonka'
+                        : receiptData.paymentMethod === 'BANK_TRANSFER' ? 'Wareejin bangi'
+                          : receiptData.paymentMethod === 'CASH' ? 'Caddaan' : 'Hab kale'}
                     </span>
                   </div>
-                  <div className="flex items-baseline space-x-1.5 flex-1 justify-center">
-                    <span className="font-black shrink-0">PAID</span>
-                    <span className="border-b border-dotted border-slate-400 px-2 font-bold text-emerald-700">
+                  <div className="flex items-end space-x-1.5 flex-1 justify-center min-w-0">
+                    <span className="font-black shrink-0 pb-1.5">La bixiyay</span>
+                    <span className="inline-flex min-h-[26px] items-end border-b border-dotted border-slate-400 px-2 pb-1 font-bold text-emerald-700 bg-white">
                       {currency}
                       {receiptData.amountPaid.toFixed(2)}
                     </span>
                   </div>
-                  <div className="flex items-baseline space-x-1.5 flex-1 justify-end">
-                    <span className="font-black shrink-0">DUE</span>
+                  <div className="flex items-end space-x-1.5 flex-1 justify-end min-w-0">
+                    <span className="font-black shrink-0 pb-1.5">Hadhay</span>
                     <span
-                      className={`border-b border-dotted border-slate-400 px-2 font-bold ${
+                      className={`inline-flex min-h-[26px] items-end border-b border-dotted border-slate-400 px-2 pb-1 font-bold bg-white ${
                         remainingDebt > 0 ? 'text-rose-600' : 'text-slate-700'
                       }`}
                     >
@@ -640,7 +593,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ isOpen, onClose, rec
               <div className="px-6 pb-4 pt-1 flex items-end justify-between gap-3">
                 {/* Left: Boxed Amount */}
                 <div className="flex items-center space-x-2 shrink-0">
-                  <span className="font-black text-xs text-slate-900">Amount=</span>
+                  <span className="font-black text-xs text-slate-900">Lacagta</span>
                   <div className="border-2 border-slate-800 bg-slate-50 px-3.5 py-1 rounded font-mono font-black text-base text-slate-950 shadow-xs">
                     {currency}
                     {receiptData.grandTotal.toFixed(2)}
@@ -653,19 +606,38 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ isOpen, onClose, rec
                     {tenant?.name || 'Maraayn'}
                   </div>
                   <span className="text-[9px] font-black text-slate-500 uppercase tracking-wider block mt-1">
-                    Received by
+                    Lacagta qabtay
                   </span>
                 </div>
 
                 {/* Right: Authorized Signature */}
                 <div className="text-center w-36 shrink-0">
                   <div className="border-b border-dotted border-slate-400 h-6 flex items-end justify-center pb-0.5 font-mono font-bold text-[11px] text-slate-500 italic">
-                    Authorized
+                    Saxiixa
                   </div>
                   <span className="text-[9px] font-black text-slate-500 uppercase tracking-wider block mt-1">
-                    Authorized Signature
+                    Saxiixa masuulka
                   </span>
                 </div>
+              </div>
+
+              {/* System branding and developer credit */}
+              <div className="flex flex-col items-center justify-center pb-2 text-center">
+                <div className="flex items-center gap-1.5">
+                  <img
+                    src="/logo.png"
+                    alt="Logo-ga Maraayn"
+                    crossOrigin="anonymous"
+                    className="h-5 w-5 object-contain"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = '/logo.png';
+                    }}
+                  />
+                  <span className="text-[9px] font-bold tracking-wide text-slate-600">
+                    Maraayn Management Business
+                  </span>
+                </div>
+                <span className="mt-0.5 text-[7px] text-slate-400">Developer By Anas Abdiwahid</span>
               </div>
 
               {/* Bottom Decorative Geometric Ribbons */}
@@ -700,7 +672,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ isOpen, onClose, rec
                   </div>
                 )}
                 <img
-                  src={tenant?.logoUrl || '/logo.png'}
+                  src={resolveApiAssetUrl(tenant?.logoUrl)}
                   alt="Logo"
                   crossOrigin="anonymous"
                   className="h-10 mx-auto object-contain mb-2"
@@ -713,30 +685,27 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ isOpen, onClose, rec
                 </h2>
                 {tenant?.location && <p className="text-[11px] text-slate-600">{tenant.location}</p>}
                 {tenant?.ownerPhone && <p className="text-[11px] text-slate-600">Tel: {tenant.ownerPhone}</p>}
-                <p className="text-[10px] text-brand-amber font-semibold mt-1">
-                  Your Business, In One Place
-                </p>
               </div>
 
               {/* Receipt Meta */}
               <div className="py-2.5 border-b border-dashed border-slate-300 space-y-1 text-[11px]">
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Receipt No:</span>
+                  <span className="text-slate-500">Rasiid Lr:</span>
                   <span className="font-bold text-slate-900">{receiptData.receiptNumber}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Date:</span>
-                  <span>{new Date(receiptData.createdAt || Date.now()).toLocaleString()}</span>
+                  <span className="text-slate-500">Taariikh:</span>
+                  <span>{new Date(receiptData.createdAt || Date.now()).toLocaleString('so-SO')}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Customer:</span>
+                  <span className="text-slate-500">Macmiil:</span>
                   <span className="font-semibold text-slate-900">
-                    {receiptData.customerName || 'Walk-in Customer'}
+                    {receiptData.customerName || 'Macmiil toos ah'}
                   </span>
                 </div>
                 {receiptData.customerPhone && (
                   <div className="flex justify-between">
-                    <span className="text-slate-500">Phone:</span>
+                    <span className="text-slate-500">Telefoon:</span>
                     <span className="font-mono">{receiptData.customerPhone}</span>
                   </div>
                 )}
@@ -745,10 +714,10 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ isOpen, onClose, rec
               {/* Items Table */}
               <div className="py-3 border-b border-dashed border-slate-300">
                 <div className="flex justify-between text-[11px] font-bold text-slate-700 pb-1.5 border-b border-slate-200">
-                  <span>Item</span>
+                  <span>Alaab</span>
                   <div className="space-x-4">
-                    <span>Qty</span>
-                    <span>Total</span>
+                    <span>Tiro</span>
+                    <span>Wadarta</span>
                   </div>
                 </div>
 
@@ -767,7 +736,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ isOpen, onClose, rec
                       </div>
                     ))
                   ) : (
-                    <div className="py-1 text-center text-slate-400">Standard Transaction</div>
+                    <div className="py-1 text-center text-slate-400">Iibka caadiga ah</div>
                   )}
                 </div>
               </div>
@@ -775,14 +744,14 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ isOpen, onClose, rec
               {/* Calculations & Debt */}
               <div className="py-2.5 space-y-1.5 text-[11px]">
                 <div className="flex justify-between text-slate-600">
-                  <span>Grand Total:</span>
+                  <span>Wadarta guud:</span>
                   <span className="font-bold text-slate-900 text-xs">
                     {currency}
                     {receiptData.grandTotal}
                   </span>
                 </div>
                 <div className="flex justify-between text-slate-600">
-                  <span>Amount Paid:</span>
+                  <span>Lacagta la bixiyay:</span>
                   <span className="font-bold text-emerald-600">
                     {currency}
                     {receiptData.amountPaid}
@@ -791,7 +760,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ isOpen, onClose, rec
 
                 {isCredit && (
                   <div className="flex justify-between py-1 px-2 bg-rose-50 rounded border border-rose-200 text-rose-700 font-bold">
-                    <span>Remaining Debt:</span>
+                    <span>Daynta hadhay:</span>
                     <span>
                       {currency}
                       {remainingDebt}
@@ -800,7 +769,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ isOpen, onClose, rec
                 )}
 
                 <div className="flex justify-between text-slate-500 text-[10px] pt-1">
-                  <span>Payment Method:</span>
+                  <span>Habka lacag-bixinta:</span>
                   <span className="uppercase font-semibold">{receiptData.paymentMethod || 'CASH'}</span>
                 </div>
               </div>
@@ -808,9 +777,23 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ isOpen, onClose, rec
               {/* Footer */}
               <div className="text-center pt-3 border-t border-dashed border-slate-300 text-[10px] text-slate-500 space-y-1">
                 <p className="font-medium text-slate-700">
-                  {tenant?.receiptSettings?.footerMessage || 'Thank you for your business!'}
+                  {tenant?.receiptSettings?.footerMessage || 'Waad ku mahadsan tahay, macaamiil, iibsigaaga.'}
                 </p>
-                <p className="text-[9px] text-slate-400">Powered by Maraayn Management System</p>
+                <div className="flex flex-col items-center pt-1">
+                  <div className="flex items-center gap-1">
+                    <img
+                      src="/logo.png"
+                      alt="Logo-ga Maraayn"
+                      crossOrigin="anonymous"
+                      className="h-4 w-4 object-contain"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = '/logo.png';
+                      }}
+                    />
+                    <span className="text-[9px] font-semibold text-slate-500">Maraayn Management Business</span>
+                  </div>
+                  <span className="text-[8px] text-slate-400">Developer By Anas Abdiwahid</span>
+                </div>
               </div>
             </div>
           )}
@@ -909,16 +892,16 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ isOpen, onClose, rec
               {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
             </button>
 
-            {/* Quick Text WhatsApp Link (Fallback) */}
-            <a
-              href={getWhatsAppTextUrl()}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="p-2 border border-slate-200 hover:bg-slate-50 text-slate-500 hover:text-emerald-600 rounded-lg text-xs transition-colors"
-              title="Keliya Fariin Qoraal ah (Plain Text WhatsApp)"
+            {/* Share the receipt image instead of opening a plain-text WhatsApp message */}
+            <button
+              type="button"
+              onClick={handleWhatsAppShareImage}
+              disabled={loadingAction !== null}
+              className="p-2 border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg text-xs transition-colors disabled:opacity-50"
+              title="U dir sawirka rasiidka WhatsApp"
             >
-              <MessageSquare className="w-3.5 h-3.5" />
-            </a>
+              <ImageIcon className="w-3.5 h-3.5" />
+            </button>
           </div>
         </div>
       </div>

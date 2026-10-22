@@ -7,10 +7,24 @@ const api = axios.create({
   },
 });
 
+export const resolveApiAssetUrl = (assetUrl?: string) => {
+  if (!assetUrl || !assetUrl.startsWith('/api/v1/')) return assetUrl || '/logo.png';
+  try {
+    const apiOrigin = new URL(api.defaults.baseURL || window.location.origin, window.location.origin).origin;
+    return new URL(assetUrl, apiOrigin).toString();
+  } catch {
+    return assetUrl;
+  }
+};
+
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('maraayn_access_token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
+  }
+  // Let the browser add the multipart boundary when uploading FormData.
+  if (typeof FormData !== 'undefined' && config.data instanceof FormData) {
+    config.headers.delete('Content-Type');
   }
   return config;
 });

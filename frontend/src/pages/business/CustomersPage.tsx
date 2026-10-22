@@ -1,19 +1,17 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import {
   Users,
   Search,
   Plus,
   Phone,
   CreditCard,
-  MessageSquare,
   X,
   FileText,
-  DollarSign,
-  AlertCircle,
 } from 'lucide-react';
 import api from '../../api/client.js';
 import { useAuth } from '../../context/AuthContext.js';
 import { Customer } from '../../types/index.js';
+import { createCustomerStatementImage } from '../../utils/customerStatement.js';
 
 export const CustomersPage: React.FC = () => {
   const { tenant } = useAuth();
@@ -37,6 +35,12 @@ export const CustomersPage: React.FC = () => {
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
   const [detailData, setDetailData] = useState<any>(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [repaymentDebtId, setRepaymentDebtId] = useState<string | null>(null);
+  const [repaymentAmount, setRepaymentAmount] = useState('');
+  const [repaymentMethod, setRepaymentMethod] = useState('CASH');
+  const [repaymentError, setRepaymentError] = useState('');
+  const [repaymentSubmitting, setRepaymentSubmitting] = useState(false);
+  const [sharingStatementId, setSharingStatementId] = useState<string | null>(null);
 
   const currency = tenant?.currencySymbol || '$';
 
@@ -91,26 +95,80 @@ export const CustomersPage: React.FC = () => {
     }
   };
 
-  const getWhatsAppStatementLink = (c: Customer) => {
-    let phone = (c.phone || '').replace(/[^0-9]/g, '');
-    if (phone.startsWith('0')) {
-      phone = '252' + phone.substring(1);
-    } else if (phone.length === 9) {
-      phone = '252' + phone;
+  const handleDebtRepayment = async (e: React.FormEvent, debt: any) => {
+    e.preventDefault();
+    const amount = Number(repaymentAmount);
+    if (!amount || amount <= 0) {
+      setRepaymentError('Geli lacag ka weyn eber.');
+      return;
+    }
+    if (amount > debt.remainingBalance) {
+      setRepaymentError(`Lacagtu kama badnaan karto daynta hartay (${currency}${debt.remainingBalance}).`);
+      return;
     }
 
-    let text = `*${(tenant?.name || 'Maraayn Business').toUpperCase()} — CUSTOMER ACCOUNT STATEMENT*\n`;
-    text += `Customer: *${c.name}*\n`;
-    text += `Account Code: ${c.code}\n`;
-    text += `Total Purchases: ${currency}${c.totalPurchases || 0}\n`;
-    text += `Total Paid: ${currency}${c.totalPaid || 0}\n`;
-    text += `--------------------------------\n`;
-    text += `*OUTSTANDING BALANCE: ${currency}${c.currentDebtBalance || 0}*\n`;
-    text += `--------------------------------\n`;
-    text += `Please contact us to settle your outstanding account balance.\n`;
-    text += `Maraayn — Your Business, In One Place`;
+    setRepaymentSubmitting(true);
+    setRepaymentError('');
+    try {
+      await api.post(`/debts/${debt._id}/repay`, { amount, paymentMethod: repaymentMethod });
+      const res = await api.get(`/customers/${selectedCustomer._id}`);
+      setDetailData(res.data);
+      setSelectedCustomer(res.data.customer);
+      setRepaymentDebtId(null);
+      setRepaymentAmount('');
+      await fetchCustomers();
+    } catch (err: any) {
+      setRepaymentError(err.response?.data?.message || 'Lacag-bixinta daynta lama diiwaangelin.');
+    } finally {
+      setRepaymentSubmitting(false);
+    }
+  };
 
-    return phone ? `https://wa.me/${phone}?text=${encodeURIComponent(text)}` : `https://wa.me/?text=${encodeURIComponent(text)}`;
+  const handleWhatsAppStatement = async (customer: Customer) => {
+    setSharingStatementId(customer._id);
+    try {
+      const response = await api.get(`/customers/${customer._id}`);
+      const account = response.data.customer || customer;
+      const payments = (response.data.payments || []).filter((payment: any) => !payment.isCancelled);
+      const file = await createCustomerStatementImage(
+        account,
+        response.data.debts || [],
+        payments,
+        tenant?.name || 'Maraayn',
+        currency,
+      );
+      let phone = (account.phone || customer.phone || '').replace(/[^0-9]/g, '');
+      if (phone.startsWith('0')) phone = `252${phone.substring(1)}`;
+      else if (phone.length === 9) phone = `252${phone}`;
+
+      if (navigator.canShare?.({ files: [file] }) && typeof navigator.share === 'function') {
+        try {
+          await navigator.share({ files: [file] });
+          return;
+        } catch (shareError: any) {
+          if (shareError.name === 'AbortError') return;
+          console.warn('File sharing is unavailable; downloading the PDF instead.', shareError);
+        }
+      }
+
+      const url = URL.createObjectURL(file);
+      const download = document.createElement('a');
+      download.href = url;
+      download.download = file.name;
+      download.click();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+      const whatsappWindow = window.open(phone ? `https://wa.me/${phone}` : 'https://wa.me/', '_blank', 'noopener,noreferrer');
+      window.alert(
+        whatsappWindow
+          ? 'Sawirka rasiidka PNG-ga Af-Soomaaliga ah waa la soo dejiyey, WhatsApp-na waa la furay. Fadlan PNG-ga ku lifaaq wada sheekaysiga macmiilka.'
+          : 'Sawirka rasiidka PNG-ga Af-Soomaaliga ah waa la soo dejiyey. Fadlan fur WhatsApp oo sawirka ku lifaaq wada sheekaysiga macmiilka.',
+      );
+    } catch (err) {
+      console.error('Failed to create customer statement:', err);
+      window.alert('Rasiidka lama diyaarin. Fadlan mar kale isku day.');
+    } finally {
+      setSharingStatementId(null);
+    }
   };
 
   return (
@@ -225,15 +283,15 @@ export const CustomersPage: React.FC = () => {
 
                     <td className="py-3 px-4 text-right space-x-1.5 whitespace-nowrap">
                       {/* WhatsApp Statement Share */}
-                      <a
-                        href={getWhatsAppStatementLink(c)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        title="Send WhatsApp Statement"
+                      <button
+                        type="button"
+                        onClick={() => handleWhatsAppStatement(c)}
+                        disabled={sharingStatementId === c._id}
+                        title="U dir sawirka rasiidka WhatsApp"
                         className="inline-flex p-1.5 rounded-lg border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 transition-colors"
                       >
-                        <MessageSquare className="w-3.5 h-3.5" />
-                      </a>
+                        <FileText className="w-3.5 h-3.5" />
+                      </button>
 
                       <button
                         onClick={() => openCustomerDetail(c)}
@@ -347,7 +405,7 @@ export const CustomersPage: React.FC = () => {
               <div className="flex items-center justify-between pb-4 border-b border-slate-100">
                 <div>
                   <h3 className="font-extrabold text-slate-900 text-base">{selectedCustomer.name}</h3>
-                  <p className="text-xs text-slate-500 font-mono mt-0.5">{selectedCustomer.code} • {selectedCustomer.phone}</p>
+                  <p className="text-xs text-slate-500 font-mono mt-0.5">{selectedCustomer.code} â€¢ {selectedCustomer.phone}</p>
                 </div>
                 <button
                   onClick={() => setSelectedCustomer(null)}
@@ -360,12 +418,12 @@ export const CustomersPage: React.FC = () => {
               {/* Debt & Purchase Summary */}
               <div className="grid grid-cols-2 gap-3 my-5">
                 <div className="bg-rose-50 p-4 rounded-xl border border-rose-200">
-                  <span className="text-[11px] font-bold text-rose-700 uppercase">Outstanding Debt Balance</span>
+                  <span className="text-[11px] font-bold text-rose-700 uppercase">Daynta Hadhay</span>
                   <p className="text-xl font-extrabold text-rose-800 mt-1">{currency}{selectedCustomer.currentDebtBalance}</p>
                 </div>
 
                 <div className="bg-emerald-50 p-4 rounded-xl border border-emerald-200">
-                  <span className="text-[11px] font-bold text-emerald-700 uppercase">Total Paid</span>
+                  <span className="text-[11px] font-bold text-emerald-700 uppercase">Lacagta La Bixiyay</span>
                   <p className="text-xl font-extrabold text-emerald-800 mt-1">{currency}{selectedCustomer.totalPaid || 0}</p>
                 </div>
               </div>
@@ -373,7 +431,7 @@ export const CustomersPage: React.FC = () => {
               {/* Customer Active Debts List */}
               <div className="space-y-4">
                 <h4 className="font-bold text-xs uppercase tracking-wider text-slate-700 border-b pb-1">
-                  Customer Debt Ledger
+                  Diiwaanka Daynta Macmiilka
                 </h4>
 
                 {detailLoading ? (
@@ -381,16 +439,86 @@ export const CustomersPage: React.FC = () => {
                 ) : detailData?.debts && detailData.debts.length > 0 ? (
                   <div className="space-y-2.5">
                     {detailData.debts.map((d: any) => (
+                      (() => {
+                        const isCancelled = d.status === 'CANCELLED' || d.notes?.includes('[CANCELLED:');
+                        const canRepay = d.remainingBalance > 0 && d.status !== 'PAID' && !isCancelled;
+                        return (
                       <div key={d._id} className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs">
                         <div className="flex justify-between font-bold text-slate-800">
                           <span>{d.debtNumber}</span>
-                          <span className="text-rose-600">{currency}{d.remainingBalance} remaining</span>
+                          <span className={canRepay ? 'text-rose-600' : 'text-emerald-700'}>
+                            {isCancelled ? 'La kansalay' : canRepay ? `${currency}${d.remainingBalance} ayaa dhiman` : 'Waa la bixiyay'}
+                          </span>
                         </div>
                         <div className="flex justify-between text-[11px] text-slate-500 mt-1">
-                          <span>Total Sale: {currency}{d.totalSaleAmount}</span>
-                          <span>Paid: {currency}{d.amountRepaid}</span>
+                          <span>Wadarta iibka: {currency}{d.totalSaleAmount}</span>
+                          <span>La bixiyay: {currency}{(d.initialPayment || 0) + (d.amountRepaid || 0)}</span>
                         </div>
+                        {canRepay && (
+                          <div className="mt-3">
+                            {repaymentDebtId === d._id ? (
+                              <form onSubmit={(e) => handleDebtRepayment(e, d)} className="space-y-2">
+                                <label className="block font-semibold text-slate-700">Lacagta uu soo celiyay</label>
+                                <div className="grid grid-cols-[1fr_1fr] gap-2">
+                                  <input
+                                    type="number"
+                                    min="0.01"
+                                    max={d.remainingBalance}
+                                    step="0.01"
+                                    required
+                                    autoFocus
+                                    value={repaymentAmount}
+                                    onChange={(e) => setRepaymentAmount(e.target.value)}
+                                    placeholder={`Ugu badnaan ${currency}${d.remainingBalance}`}
+                                    className="min-w-0 rounded-lg border border-slate-300 bg-white px-2.5 py-2 font-semibold"
+                                  />
+                                  <select
+                                    value={repaymentMethod}
+                                    onChange={(e) => setRepaymentMethod(e.target.value)}
+                                    className="min-w-0 rounded-lg border border-slate-300 bg-white px-2 py-2"
+                                  >
+                                    <option value="CASH">Caddaan</option>
+                                    <option value="MOBILE_MONEY">Mobile Money</option>
+                                    <option value="BANK_TRANSFER">Bangiga</option>
+                                    <option value="OTHER">Kale</option>
+                                  </select>
+                                </div>
+                                {repaymentError && <p className="text-rose-600">{repaymentError}</p>}
+                                <div className="flex gap-2">
+                                  <button
+                                    type="submit"
+                                    disabled={repaymentSubmitting}
+                                    className="rounded-lg bg-emerald-600 px-3 py-2 font-bold text-white disabled:opacity-50"
+                                  >
+                                    {repaymentSubmitting ? 'Waa la kaydinayaa...' : 'Diiwaangeli lacagta'}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => { setRepaymentDebtId(null); setRepaymentError(''); }}
+                                    className="rounded-lg border border-slate-300 px-3 py-2 font-semibold text-slate-600"
+                                  >
+                                    Ka noqo
+                                  </button>
+                                </div>
+                              </form>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setRepaymentDebtId(d._id);
+                                  setRepaymentAmount('');
+                                  setRepaymentError('');
+                                }}
+                                className="rounded-lg bg-emerald-600 px-3 py-2 font-bold text-white hover:bg-emerald-700"
+                              >
+                                + Diiwaangeli lacag soo celis
+                              </button>
+                            )}
+                          </div>
+                        )}
                       </div>
+                        );
+                      })()
                     ))}
                   </div>
                 ) : (
@@ -401,15 +529,15 @@ export const CustomersPage: React.FC = () => {
 
             {/* Bottom Actions */}
             <div className="pt-4 border-t border-slate-100 flex gap-2">
-              <a
-                href={getWhatsAppStatementLink(selectedCustomer)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex-1 flex items-center justify-center space-x-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-4 rounded-xl text-xs transition-colors"
+              <button
+                type="button"
+                onClick={() => handleWhatsAppStatement(selectedCustomer)}
+                disabled={sharingStatementId === selectedCustomer._id}
+                className="flex-1 flex items-center justify-center space-x-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-4 rounded-xl text-xs transition-colors disabled:opacity-50"
               >
-                <MessageSquare className="w-4 h-4" />
-                <span>Send WhatsApp Statement</span>
-              </a>
+                <FileText className="w-4 h-4" />
+                <span>{sharingStatementId === selectedCustomer._id ? 'Sawirka waa la diyaarinayaa...' : 'U dir sawirka rasiidka WhatsApp'}</span>
+              </button>
 
               <button
                 onClick={() => setSelectedCustomer(null)}

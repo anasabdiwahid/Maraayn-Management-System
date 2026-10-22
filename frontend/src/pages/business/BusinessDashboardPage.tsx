@@ -33,6 +33,7 @@ import {
 import api from '../../api/client.js';
 import { useAuth } from '../../context/AuthContext.js';
 import { StatCard } from '../../components/common/StatCard.js';
+import { formatMoney } from '../../utils/format.js';
 
 export const BusinessDashboardPage: React.FC = () => {
   const { tenant } = useAuth();
@@ -75,7 +76,7 @@ export const BusinessDashboardPage: React.FC = () => {
             {tenant?.name || 'Maraayn Business'}
           </h1>
           <p className="text-xs text-slate-500 mt-1">
-            Overview of your business financials, inventory, and customers
+            Guudmarka iibka, lacagaha soo galay, kharashyada, faa'iidada iyo kaydka
           </p>
         </div>
 
@@ -90,7 +91,7 @@ export const BusinessDashboardPage: React.FC = () => {
                   period === p ? 'bg-brand-navy text-white font-bold' : 'hover:text-slate-900'
                 }`}
               >
-                {p === 'today' ? 'Today' : p === '7days' ? '7 Days' : p === 'month' ? 'This Month' : 'This Year'}
+                {p === 'today' ? 'Maanta' : p === '7days' ? '7 maalmood' : p === 'month' ? 'Bishan' : 'Sannadkan'}
               </button>
             ))}
           </div>
@@ -100,49 +101,89 @@ export const BusinessDashboardPage: React.FC = () => {
             className="flex items-center space-x-1.5 bg-brand-amber hover:bg-brand-amber-light text-brand-navy font-bold py-2 px-3.5 rounded-xl text-xs transition-colors shadow-sm"
           >
             <Plus className="w-4 h-4 stroke-[3]" />
-            <span>New Sale</span>
+            <span>Iib Cusub</span>
           </NavLink>
         </div>
       </div>
 
-      {/* KPI Stat Cards (10 Financial Figures) */}
+      {/* Financial and inventory overview */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
         <StatCard
-          title="Total Revenue"
-          value={`${currency}${stats?.totalRevenue || 0}`}
-          subtitle={`${stats?.totalSalesCount || 0} sales`}
+          title="Iibka Guud"
+          value={`${currency}${formatMoney(stats?.totalRevenue)}`}
+          subtitle={`${stats?.totalSalesCount || 0} iib`}
           icon={TrendingUp}
           color="green"
         />
 
         <StatCard
-          title="Net Profit"
-          value={`${currency}${stats?.netProfit || 0}`}
-          subtitle={`Gross: ${currency}${stats?.grossProfit || 0}`}
+          title="Faa'iido Saafi ah"
+          value={`${currency}${formatMoney(stats?.netProfit)}`}
+          subtitle={`Faa'iido guud oo la xaqiijiyay: ${currency}${formatMoney(stats?.grossProfit)}`}
           icon={DollarSign}
           color="amber"
         />
 
         <StatCard
-          title="Outstanding Debt"
-          value={`${currency}${stats?.totalOutstandingDebt || 0}`}
-          subtitle={`${stats?.overdueCount || 0} overdue`}
+          title="Lacag La Helay"
+          value={`${currency}${formatMoney(stats?.totalCollected)}`}
+          subtitle="Lacagta la qabtay muddadan"
+          icon={Receipt}
+          color="blue"
+        />
+
+        <StatCard
+          title="Kharashyada"
+          value={`${currency}${formatMoney(stats?.totalExpenses)}`}
+          subtitle={`Muddadan: ${period === 'today' ? 'maanta' : period === '7days' ? '7 maalmood' : period === 'month' ? 'bishan' : 'sannadkan'}`}
+          icon={TrendingDown}
+          color="red"
+        />
+
+        <StatCard
+          title="Qiimaha Alaabta La Iibiyay"
+          value={`${currency}${formatMoney(stats?.costOfGoodsSold)}`}
+          subtitle={`${stats?.totalItemsSold || 0} xabo ayaa la iibiyay`}
+          icon={ShoppingCart}
+          color="navy"
+        />
+
+        <StatCard
+          title="Daynta Maqan"
+          value={`${currency}${formatMoney(stats?.totalOutstandingDebt)}`}
+          subtitle={`${stats?.overdueCount || 0} dib u dhacay`}
           icon={CreditCard}
           color="red"
         />
 
         <StatCard
-          title="Inventory Value"
-          value={`${currency}${stats?.totalInventoryValue || 0}`}
-          subtitle={`${stats?.totalProducts || 0} products`}
+          title="Dayn La Bixiyay"
+          value={`${currency}${formatMoney(stats?.totalDebtRepaid)}`}
+          subtitle="Lacagta daynta laga soo celiyay ilaa hadda"
+          icon={CheckCircle}
+          color="green"
+        />
+
+        <StatCard
+          title="Faa'iidada Daynta La Soo Celiyay"
+          value={`${currency}${formatMoney(stats?.debtRepaymentProfit)}`}
+          subtitle="Faa'iidada lacagaha daynta ee muddadan"
+          icon={TrendingUp}
+          color="amber"
+        />
+
+        <StatCard
+          title="Qiimaha Kaydka"
+          value={`${currency}${formatMoney(stats?.totalInventoryValue)}`}
+          subtitle={`${stats?.totalProducts || 0} badeeco • ${stats?.totalStockQuantity || 0} xabo kaydka yaal`}
           icon={Package}
           color="navy"
         />
 
         <StatCard
-          title="Customers"
+          title="Macmiil"
           value={stats?.totalCustomers || 0}
-          subtitle="Registered"
+          subtitle="Diiwaangashan"
           icon={Users}
           color="blue"
         />
@@ -153,10 +194,10 @@ export const BusinessDashboardPage: React.FC = () => {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 mb-4 border-b border-slate-100 gap-2">
           <div>
             <h2 className="text-base font-extrabold text-[#142746] flex items-center gap-2">
-              <span>Falanqaynta Iibka & Faa'iidada (Sales & Profit Classification)</span>
+              <span>Falanqaynta Iibka iyo Faa'iidada</span>
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">
-              Kala saarka alaabta faa'iidada leh, kuwa isla qiimihii lagu iibiyay, iyo kuwa qasaarada ku baxay
+              Faa'iidada ama khasaaraha alaabta la iibiyay, iyadoo lagu xisaabiyay qiimaha soo gadashada
             </p>
           </div>
           <span className="text-[11px] font-semibold text-slate-500 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-200 self-start sm:self-auto">
@@ -170,14 +211,14 @@ export const BusinessDashboardPage: React.FC = () => {
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-bold text-emerald-900 uppercase tracking-wider flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                Alaabta Faa'iidada Leh
+                Alaabta Faa'iido Keentay
               </span>
               <div className="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center shadow-sm">
                 <TrendingUp className="w-4 h-4 stroke-[2.5]" />
               </div>
             </div>
             <div className="text-2xl font-black text-emerald-700 tracking-tight">
-              +{currency}{stats?.profitClassification?.profitable?.totalProfit?.toLocaleString() ?? 0}
+              +{currency}{formatMoney(stats?.profitClassification?.profitable?.totalProfit)}
             </div>
             <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-emerald-200/60 text-xs">
               <span className="text-emerald-800 font-medium">
@@ -194,21 +235,21 @@ export const BusinessDashboardPage: React.FC = () => {
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-bold text-blue-900 uppercase tracking-wider flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-blue-500"></span>
-                Isla Qiimihii Lagu Soo Gatay
+                Faa'iido iyo Khasaare La'aan
               </span>
               <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center shadow-sm">
                 <Minus className="w-4 h-4 stroke-[3]" />
               </div>
             </div>
             <div className="text-2xl font-black text-blue-800 tracking-tight">
-              {currency}{stats?.profitClassification?.breakeven?.totalRevenue?.toLocaleString() ?? 0}
+              {currency}{formatMoney(stats?.profitClassification?.breakeven?.totalRevenue)}
             </div>
             <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-blue-200/60 text-xs">
               <span className="text-blue-800 font-medium">
                 Alaab la iibiyay: <strong className="font-bold text-blue-950">{stats?.profitClassification?.breakeven?.itemsCount || 0} xabo</strong>
               </span>
               <span className="text-[11px] font-bold text-blue-700 bg-blue-100/80 px-2 py-0.5 rounded-md">
-                Breakeven ($0 Faa'iido)
+                Faa'iido $0
               </span>
             </div>
           </div>
@@ -218,14 +259,14 @@ export const BusinessDashboardPage: React.FC = () => {
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-bold text-rose-900 uppercase tracking-wider flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-rose-500"></span>
-                Alaabta Qasaarada Ku Baxday
+                Alaabta Khasaaraha Keentay
               </span>
               <div className="w-8 h-8 rounded-lg bg-rose-600 text-white flex items-center justify-center shadow-sm">
                 <TrendingDown className="w-4 h-4 stroke-[2.5]" />
               </div>
             </div>
             <div className="text-2xl font-black text-rose-700 tracking-tight">
-              -{currency}{stats?.profitClassification?.loss?.totalLoss?.toLocaleString() ?? 0}
+              -{currency}{formatMoney(stats?.profitClassification?.loss?.totalLoss)}
             </div>
             <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-rose-200/60 text-xs">
               <span className="text-rose-800 font-medium">
@@ -245,8 +286,8 @@ export const BusinessDashboardPage: React.FC = () => {
         <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200 p-6 shadow-sm min-w-0 overflow-hidden">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="text-sm font-bold text-slate-800">Revenue vs Expenses</h3>
-              <p className="text-xs text-slate-400">Financial trend for this period</p>
+              <h3 className="text-sm font-bold text-slate-800">Iibka iyo Kharashyada</h3>
+              <p className="text-xs text-slate-400">Isbarbardhigga maalinlaha ah ee muddadan</p>
             </div>
             <TrendingUp className="w-4 h-4 text-brand-amber" />
           </div>
@@ -268,7 +309,7 @@ export const BusinessDashboardPage: React.FC = () => {
                 <XAxis dataKey="date" stroke="#94a3b8" fontSize={11} />
                 <YAxis stroke="#94a3b8" fontSize={11} />
                 <Tooltip
-                  formatter={(value: any) => [`${currency}${value}`, '']}
+                  formatter={(value: any) => [`${currency}${formatMoney(value)}`, '']}
                   contentStyle={{ backgroundColor: '#142746', color: '#fff', borderRadius: '8px', fontSize: '12px' }}
                 />
                 <Area type="monotone" dataKey="revenue" name="Revenue" stroke="#16A34A" strokeWidth={2.5} fill="url(#colorRev)" />
@@ -282,10 +323,10 @@ export const BusinessDashboardPage: React.FC = () => {
         <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm flex flex-col justify-between min-w-0 overflow-hidden">
           <div>
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-bold text-slate-800">Payment Methods</h3>
+              <h3 className="text-sm font-bold text-slate-800">Hababka Lacag Bixinta</h3>
               <CreditCard className="w-4 h-4 text-brand-navy" />
             </div>
-            <p className="text-xs text-slate-400 mb-4">Cash vs Mobile Money vs Bank</p>
+            <p className="text-xs text-slate-400 mb-4">Lacagta dhab ahaan la qabtay muddadan</p>
 
             <div className="h-44 w-full min-w-0 overflow-hidden">
               <ResponsiveContainer width="100%" height="100%">
@@ -305,7 +346,7 @@ export const BusinessDashboardPage: React.FC = () => {
                     ))}
                   </Pie>
                   <Tooltip
-                    formatter={(val: any) => [`${currency}${val}`, '']}
+                    formatter={(val: any) => [`${currency}${formatMoney(val)}`, '']}
                     contentStyle={{ backgroundColor: '#142746', color: '#fff', borderRadius: '8px', fontSize: '11px' }}
                   />
                 </PieChart>
@@ -320,7 +361,7 @@ export const BusinessDashboardPage: React.FC = () => {
                   <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS[idx % COLORS.length] }} />
                   <span className="font-medium text-slate-700">{p.method}</span>
                 </div>
-                <span className="font-bold text-slate-900">{currency}{p.amount}</span>
+                <span className="font-bold text-slate-900">{currency}{formatMoney(p.amount)}</span>
               </div>
             ))}
           </div>
@@ -332,9 +373,9 @@ export const BusinessDashboardPage: React.FC = () => {
         {/* Recent Sales Table */}
         <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-bold text-slate-800">Recent Sales</h3>
+            <h3 className="text-sm font-bold text-slate-800">Iibkii Ugu Dambeeyay</h3>
             <NavLink to="/business/sales" className="text-xs font-semibold text-brand-navy hover:underline flex items-center">
-              <span>View All</span>
+              <span>Arag dhammaan</span>
               <ArrowUpRight className="w-3.5 h-3.5 ml-1" />
             </NavLink>
           </div>
@@ -353,7 +394,7 @@ export const BusinessDashboardPage: React.FC = () => {
                   </div>
 
                   <div className="text-right">
-                    <span className="font-bold text-slate-900 block">{currency}{s.grandTotal}</span>
+                    <span className="font-bold text-slate-900 block">{currency}{formatMoney(s.grandTotal)}</span>
                     <span
                       className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
                         s.saleType === 'CREDIT_SALE' ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'
@@ -375,7 +416,7 @@ export const BusinessDashboardPage: React.FC = () => {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center space-x-2">
               <AlertTriangle className="w-4 h-4 text-amber-500" />
-              <h3 className="text-sm font-bold text-slate-800">Low Stock Alert</h3>
+              <h3 className="text-sm font-bold text-slate-800">Kaydka Alaabta Oo Yar</h3>
             </div>
             <NavLink to="/business/products" className="text-xs font-semibold text-brand-navy hover:underline flex items-center">
               <span>Products</span>
